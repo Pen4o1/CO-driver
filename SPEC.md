@@ -52,7 +52,7 @@ src/core/                     PURE TypeScript. No React, no Expo, no native, no 
   coach/                      timing.ts (lead distance), scheduler (pure state machine)
 
 src/features/                 Wiring: anything that touches React/Expo/network/native
-  routing/                    mapboxProvider, generateCandidates, cache
+  routing/                    providers/<id>/, generateCandidates, cache, registry
   voice/                      TtsProvider, DeviceTtsProvider, CloudTtsProvider, CoDriverVoice
   coach/                      useCoDriver (location loop), backgroundTask
   maps/                       MapView wrappers, route layers, grade heatmap, offline packs
@@ -98,7 +98,10 @@ export type RouteProfile = {
   minGradeTolerance: TurnGrade;     // ignore corners non-severe than this when optimising
   maxDetourRatio: number;           // vs fastest route. default 1.35
   weights: ScoringWeights;
-  mapboxProfile: 'driving' | 'driving-traffic';
+  providerProfile: string;          // opaque to core, owned by the provider impl
+                                    //   e.g. valhalla: {use_highways, use_trails}
+                                    //        ors: {preference, avoid_features}
+  providerParams: Record<string, unknown>;
 };
 
 export type ScoringWeights = {
@@ -126,20 +129,24 @@ export type CurvinessBreakdown = {
 
 export type RouteCandidate = {
   id: string;
+  providerId: string;               // 'valhalla' | 'ors' | 'osrm' | 'mock'
   geometry: RouteGeometry;
   steps: RouteStep[];
   breakdown: CurvinessBreakdown;
   fastestDurationS: number;         // for the "+12 min" comparison
   profileId: RouteStyle;
   waypointsUsed: LatLng[];
+  ascentM: number | null;           // from ORS summary.ascent, or Valhalla /height
+  descentM: number | null;
 };
 
 export type RouteStep = {
   distanceM: number;
   durationS: number;
   roadName?: string;
-  roadClass?: string;
-  maxSpeedKph?: number;
+  wayType?: number;                 // ORS extra_info.waytype 0..7 (1=state road, 3=street...)
+  surface?: string;                 // ORS extra_info.surface
+  steepnessPct?: number;            // ORS extra_info.steepness, signed, per segment
   maneuver: { type: string; modifier?: string; instruction: string; location: LatLng };
 };
 
@@ -244,7 +251,7 @@ Input: `RouteGeometry`. Output: `Corner[]`.
 
 **Severity** `0..1` for UI + priority: `severity = clamp01( (7 - grade) / 6 * 0.7 + min(|totalAngle|/180, 1) * 0.3 )`.
 
-**Router cross-check:** Mapbox maneuver modifiers map to an implied grade — `sharp left/right` → 2, `left/right` → 3.5, `slight left/right` → 5. Geometry wins on disagreement; log it in `__DEV__`.
+**Router cross-check:** the router's maneuver modifiers map to an implied grade — `sharp left/right` → 2, `left/right` → 3.5, `slight left/right` → 5. Geometry wins on disagreement; log it in `__DEV__`.
 
 **Undershoot rule:** distances are always rounded **down** (nearest 10 m below 100 m, nearest 50 m above), so the call is never optimistic.
 
@@ -287,9 +294,20 @@ curvatureDegPerKm   = Σ |ΔΘ| over route (degrees) / (lengthM / 1000)
 hairpinCount        = #{ corners with grade == 1 }
 turnDensityPerKm    = #{ corners with grade <= 4 } / (lengthM / 1000)
 motorwayShare       = metres on motorway-class roads / lengthM
-lowSpeedRoadShare   = metres with maxspeed <= 60 kph / lengthM
-elevationVariationM = p95Elevation - p5Elevation  (null when DEM absent)
+lowSpeedRoadShare   = 1 - (metres on wayType 1|2 (state/regional) / lengthM)
+elevationVariationM = ascentM, falling back to p95-p5 of the DEM profile (null if neither)
 ```
+
+**Source of road attributes (provider-neutral).** Do not assume a `maxspeed` annotation exists —
+OSM exposes it inconsistently. In preference order:
+1. ORS `extra_info: ["waytype","surface","steepness"]` → `properties.extras.<name>.values`
+   (per-segment, aligned to `segments[].steps`).
+2. Valhalla `/trace_attributes` with `filters.attributes: ["road_class","surface","edge.percent_grade"]`.
+3. Overpass API (free, no key) for the route corridor — `highway=*`, `maxspeed`, `surface`.
+   Cache aggressively; never call Overpass per candidate.
+4. `null` — and redistribute the weight. **A metric that cannot be sourced must be `null`,
+   not zero**, or every candidate looks like it scores badly.
+
 
 Normalise each metric min–max **across the candidate set** (if a metric is constant across the set, its normalised value is 0.5). Then:
 
@@ -368,3 +386,37 @@ grid_cache(cell_id PRIMARY KEY, snapped_json, created_at)   -- road snapping, av
 - `src/core` has ≥ 90% statement coverage and zero React/Expo imports (lint-enforced).
 - The app runs a full simulated drive with airplane mode on, screen locked, ringer off.
 - No file over 250 lines; no `any`; no TODO comments left in merged code.
+
+---
+
+## 11. Providers (no paid services, no credit card)
+
+**This project uses no paid APIs and requires no card anywhere.** See `MAPS-FREE-STACK.md`
+for the full rationale and the API payload shapes.
+
+| Layer | Provider | Auth |
+|---|---|---|
+| Map render | `@maplibre/maplibre-react-native` (MIT, fork of Mapbox GL SDK v9) | none |
+| Tiles | OpenFreeMap `https://tiles.openfreemap.org/styles/liberty` | none |
+| Terrain DEM | AWS `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, encoding `terrarium` | none |
+| Routing (twisty) | Valhalla `https://valhalla1.openstreetmap.de/route` | none |
+| Routing (alternatives, loops, elevation) | ORS `https://api.openrouteservice.org/v2/directions/driving-car/geojson` | free key, no card |
+| Geocoding | Photon `https://photon.komoot.io/api` | none |
+| Voice (default) | `expo-speech` (device) | none |
+| Voice (natural) | local Piper / Kokoro, pre-rendered into a voice pack | none |
+
+### Rules for this layer
+- **`src/core` never names a provider.** `RoutingProvider` / `TtsProvider` interfaces only.
+  Provider implementations live in `src/features/routing/providers/<id>/` and are selected by id
+  from settings. Adding a third provider must touch zero feature code.
+- **Every provider is unit-tested against committed fixture JSON.** No network in tests.
+- **Fair use:** the community servers (FOSSGIS Valhalla, Photon, Nominatim) are volunteer-funded
+  and for development + light personal use only. Always send a descriptive `User-Agent`,
+  cache in SQLite, back off on 429/503, and never loop candidate generation against them —
+  use fixtures. Nominatim is capped at 1 req/s.
+- **Ship-ready path** (when you outgrow free, in order of preference): self-host Valhalla +
+  OpenFreeMap in Docker on a ~€5/mo VPS → ORS Starter (€20/mo) → only then consider commercial.
+- **Twisty routing primitive:** Valhalla `costing: "motorcycle"` with
+  `costing_options.motorcycle.use_highways` (0..1, lower = avoid motorways) and `.use_trails`
+  (0..1, higher = prefer minor roads). This is the primary lever for "more turns / fewer turns";
+  the geometric curviness scorer then ranks what the router returns.

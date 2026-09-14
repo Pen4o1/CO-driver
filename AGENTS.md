@@ -9,7 +9,8 @@ This file is the source of truth for *how you work*.
 2. **`src/core` is pure.** No `react`, `react-native`, `expo-*`, `fetch`, or native imports in `src/core/**`. It must be runnable and testable in plain Node.
 3. **Explain before you code.** For any task involving math (geometry, corner detection, scoring, timing), describe your approach and list your assumptions in 5–10 lines *before* writing the file. Then implement.
 4. **Tests are part of the deliverable**, not a follow-up. If you write corner detection, you write the tests for corner detection in the same response.
-5. **Never invent an API.** If you're unsure a Mapbox / Expo method exists or its exact signature, say "I need to verify this" and either check the docs or propose a wrapper that isolates the uncertainty in one file.
+5. **Never invent an API.** If you're unsure a MapLibre / Valhalla / ORS / Expo method exists or its exact signature, say "I need to verify this" and either check the docs or propose a wrapper that isolates the uncertainty in one file. Public-server APIs (Valhalla's FOSSGIS instance especially) shift between builds — verify parameter names against `valhalla.github.io/valhalla/api/` and `openrouteservice.org/dev/` before relying on them.
+5b. **No paid services, ever.** No Mapbox, no Google Maps, no paid TTS. The stack is defined in `SPEC.md` §Providers and `MAPS-FREE-STACK.md`. If a task appears to need a paid API, stop and propose a free alternative instead of adding a key or a dependency.
 6. **No new dependencies without one sentence of justification** and my approval.
 7. **Small files.** 250 lines max. Split by feature. No god components.
 8. **Strict TypeScript.** No `any`, no non-null assertions in feature code, no `@ts-ignore`. Use `unknown` + zod at boundaries.
@@ -20,7 +21,7 @@ This file is the source of truth for *how you work*.
 
 - Naming: `camelCase` for values, `PascalCase` for types/components, `SCREAMING_SNAKE` for module constants. Files: `camelCase.ts` for logic, `PascalCase.tsx` for components.
 - Units in names. Always. `distanceM`, `durationS`, `speedMps`, `bearingDeg`, `radiusM`, `spacingM`. A bare `distance` is a bug.
-- Coordinates are `{ lat, lng }`. Mapbox wants `[lng, lat]` — convert at the boundary only, in `features/maps`.
+- Coordinates are `{ lat, lng }`. Every provider API (ORS/Valhalla/GeoJSON) wants `[lng, lat]` — convert at the boundary only, in `features/routing/providers` and `features/maps`. Never leak a `[lng,lat]` tuple into `src/core`.
 - Every expo/network call is wrapped in a try/catch that converts to a typed `Result<T, AppError>`. Never let a raw exception reach a screen.
 - Errors the user can act on get a toast; everything else is logged and swallowed.
 - Accessibility: every interactive element gets `accessibilityLabel`. Minimum 44pt hit target. Anything on the driving HUD must be readable at a glance: ≥ 28pt type, high contrast.
@@ -43,10 +44,10 @@ This file is the source of truth for *how you work*.
 ## Testing conventions
 
 - Unit tests live next to the code: `detectCorners.test.ts`.
-- Fixtures live in `src/core/__fixtures__/` as committed JSON (recorded Mapbox responses, route GeoJSON). **Never make a network call in a test.**
+- Fixtures live in `src/core/__fixtures__/` as committed JSON (recorded ORS/Valhalla responses, route GeoJSON). **Never make a network call in a test.**
 - Synthetic geometry helpers (`makeArc(radiusM, sweepDeg)`, `makeChicane()`) live in `src/core/pacenotes/__fixtures__/builders.ts` and are reused across tests.
 - Snapshot tests are allowed for `spokenFull` strings — they're the product's voice and changing them should be a deliberate, reviewed act. When a snapshot changes, explain *why* in the commit message.
 
 ## When you're stuck
 
-Say so. A short honest "I can't verify this API — here are two options and their trade-offs" is far more useful than confident wrong code. I would rather answer one question than debug 200 lines of invented Mapbox methods.
+Say so. A short honest "I can't verify this API — here are two options and their trade-offs" is far more useful than confident wrong code. I would rather answer one question than debug 200 lines of invented API methods.

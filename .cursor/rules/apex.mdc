@@ -23,15 +23,19 @@ Users build a route, choose how twisty it should be, and get spoken calls as the
 2. **Domain math lives in `src/core`**, never inside a component. Components render; they don't compute geometry.
 3. **Tests ship with the code** in the same response, not later. `src/core` targets ≥ 90% coverage.
 4. **Explain the algorithm and list assumptions before writing math code.**
-5. **Never invent an API.** If unsure about a Mapbox / Expo / React Native method, say so and
-   verify against the indexed docs before using it.
-6. **Units are always in the name:** `distanceM`, `durationS`, `speedMps`, `bearingDeg`, `radiusM`.
+5. **Never invent an API.** If unsure about a MapLibre / Valhalla / ORS / Expo / React Native
+   method, say so and verify against the indexed docs before using it.
+6. **No paid services, no API keys that need a card.** The stack is fixed in `SPEC.md` §11:
+   MapLibre + OpenFreeMap tiles + AWS terrarium DEM + Valhalla (no key) + ORS (free key) +
+   Photon geocoding + expo-speech. Never suggest Mapbox or Google Maps. If a task seems to need
+   a paid API, stop and propose a free alternative.
+7. **Units are always in the name:** `distanceM`, `durationS`, `speedMps`, `bearingDeg`, `radiusM`.
    A bare `distance` is a bug.
-7. **Strict TypeScript.** No `any`, no `@ts-ignore`, no non-null assertions in feature code.
+8. **Strict TypeScript.** No `any`, no `@ts-ignore`, no non-null assertions in feature code.
    Validate at boundaries with zod.
-8. **No `Math.random()` or `Date.now()` inside `src/core`** — inject `now`/`rng` so tests are deterministic.
-9. **Max 250 lines per file.** Split by feature.
-10. **No new dependency without one sentence of justification** and approval.
+9. **No `Math.random()` or `Date.now()` inside `src/core`** — inject `now`/`rng` so tests are deterministic.
+10. **Max 250 lines per file.** Split by feature.
+11. **No new dependency without one sentence of justification** and approval.
 
 ## Safety rules (non-negotiable)
 - Never require a tap to receive a call.
