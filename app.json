@@ -11,14 +11,20 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.apex.rallycodriver",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Apex uses your location to place the route start pin. Later it will use location for spoken pace notes while driving."
+        "NSLocationWhenInUseUsageDescription": "Apex uses your location to place the route start pin and to time spoken pace notes while you drive.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Apex needs background location for continuous voice guidance while driving, including when the screen is off.",
+        "NSLocationAlwaysUsageDescription": "Apex needs background location for continuous voice guidance while driving, including when the screen is off.",
+        "UIBackgroundModes": ["location", "audio"]
       }
     },
     "android": {
       "package": "com.apex.rallycodriver",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -40,9 +46,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Apex uses your location to place the route start pin."
+          "locationWhenInUsePermission": "Apex uses your location to place the route start pin and to time spoken pace notes while you drive.",
+          "locationAlwaysAndWhenInUsePermission": "Apex needs background location for continuous voice guidance while driving, including when the screen is off.",
+          "locationAlwaysPermission": "Apex needs background location for continuous voice guidance while driving, including when the screen is off.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ],
+      "expo-task-manager",
       [
         "expo-audio",
         {

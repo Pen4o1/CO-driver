@@ -2,7 +2,7 @@
 
 Rally co-driver for normal roads. Build a route, pick how twisty it should be, and hear pace notes in real time.
 
-This is Phase 4: pre-rendered co-driver voice. Notes are synthesised once during Recce, cached on disk, and only played at drive time. Default voice is on-device `expo-speech`. Optional natural voice is a local Piper/Kokoro server behind an OpenAI-compatible HTTP URL — no paid TTS.
+This is Phase 5: the live co-driver engine and Sim Drive. Every GPS (or simulated) fix goes through one pure `updateEngine` function. Notes are timed from SPEC §8, clips from Phase 4 are only *played*. Map-matching uses Valhalla `/trace_route` (no Mapbox).
 
 ## Stack
 

@@ -63,7 +63,7 @@ function decodeShape(shape: unknown): LatLng[] {
   return [];
 }
 
-function tripShape(trip: ValhallaTrip): LatLng[] {
+export function coordsFromValhallaTrip(trip: ValhallaTrip): LatLng[] {
   const fromLeg = trip.legs[0]?.shape;
   if (fromLeg) {
     const decoded = decodeShape(fromLeg);
@@ -110,7 +110,7 @@ function mapTrip(
   waypointsUsed: LatLng[],
   fastestDurationS: number,
 ): RouteCandidate {
-  const coords = tripShape(trip);
+  const coords = coordsFromValhallaTrip(trip);
   const geometry = buildRouteGeometry(coords, null);
   const durationS = trip.summary.time;
   const steps = trip.legs.flatMap((leg) =>

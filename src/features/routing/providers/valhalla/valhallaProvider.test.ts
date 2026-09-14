@@ -39,4 +39,18 @@ describe('createValhallaProvider', () => {
     expect(body.costing).toBe('motorcycle');
     expect(body.alternates).toBe(2);
   });
+
+  it('match() posts /trace_route with map_snap (no network)', async () => {
+    const fetchImpl: HttpGet = jest.fn(async () => jsonResponse(200, valhalla));
+    const provider = createValhallaProvider({ fetchImpl });
+    const geometry = await provider.match(waypoints);
+    expect(geometry.coords.length).toBeGreaterThan(1);
+    const url = (fetchImpl as jest.Mock).mock.calls[0][0] as string;
+    expect(url).toContain('/trace_route');
+    const body = JSON.parse(
+      (fetchImpl as jest.Mock).mock.calls[0][1].body as string,
+    ) as { shape_match: string; costing: string };
+    expect(body.shape_match).toBe('map_snap');
+    expect(body.costing).toBe('auto');
+  });
 });

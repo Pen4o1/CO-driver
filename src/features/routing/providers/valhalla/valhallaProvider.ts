@@ -1,6 +1,5 @@
 import { APP_USER_AGENT, VALHALLA_DEFAULT_URL } from '@/core/config';
 import { appError } from '@/core/errors';
-import { buildRouteGeometry } from '@/core/geo';
 import type { RouteRequest, RoutingProvider } from '@/core/routing';
 import type { LatLng, RouteGeometry } from '@/core/types';
 
@@ -13,6 +12,7 @@ import {
 import { hashKey, type StringCache } from '../../../storage/kvCache';
 import { mapValhallaDirections } from './valhallaMapper';
 import { valhallaDirectionsSchema } from './valhallaSchema';
+import { geometryFromTrace, valhallaTraceBody } from './valhallaTrace';
 
 export type ValhallaProviderDeps = {
   fetchImpl: HttpGet;
@@ -59,17 +59,17 @@ export function createValhallaProvider(
   const sleep = deps.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   const now = deps.now ?? (() => Date.now());
 
-  async function requestRoute(
-    req: RouteRequest,
+  async function requestJson(
+    path: '/route' | '/trace_route',
+    body: unknown,
     didRetry: boolean,
   ): Promise<unknown> {
     const base = (deps.getBaseUrl?.() ?? VALHALLA_DEFAULT_URL).replace(
       /\/$/,
       '',
     );
-    const url = `${base}/route`;
-    const body = valhallaRequestBody(req);
-    const cacheKey = hashKey(`valhalla:${JSON.stringify(body)}`);
+    const url = `${base}${path}`;
+    const cacheKey = hashKey(`valhalla:${path}:${JSON.stringify(body)}`);
     const cached = deps.cache ? await deps.cache.get(cacheKey) : null;
     if (cached) {
       return JSON.parse(cached) as unknown;
@@ -89,7 +89,7 @@ export function createValhallaProvider(
       const retryAfterMs =
         parseRetryAfterMs(response.headers.get('retry-after'), now()) ?? 1000;
       await sleep(retryAfterMs);
-      return requestRoute(req, true);
+      return requestJson(path, body, true);
     }
 
     if (!response.ok) {
@@ -116,7 +116,11 @@ export function createValhallaProvider(
         throw appError('no-route', 'Need a start and an end pin.');
       }
       try {
-        const raw = await requestRoute(req, false);
+        const raw = await requestJson(
+          '/route',
+          valhallaRequestBody(req),
+          false,
+        );
         deps.onRawResponse?.(raw);
         const parsed = valhallaDirectionsSchema.safeParse(raw);
         if (!parsed.success) {
@@ -142,7 +146,17 @@ export function createValhallaProvider(
       if (locs.length < 2) {
         throw appError('no-route', 'Need at least two points to match.');
       }
-      return buildRouteGeometry(locs, null);
+      try {
+        const raw = await requestJson(
+          '/trace_route',
+          valhallaTraceBody(locs),
+          false,
+        );
+        deps.onRawResponse?.(raw);
+        return geometryFromTrace(raw);
+      } catch (caught) {
+        throw errorFromUnknown(caught);
+      }
     },
   };
 }

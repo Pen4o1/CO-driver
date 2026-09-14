@@ -83,7 +83,17 @@ export default function RouteDetailsScreen() {
           />
           <Button
             label="Prepare voice"
+            variant="secondary"
             onPress={() => router.push(`/route/${id}/prepare`)}
+          />
+          <Button
+            label="Recce / Start"
+            onPress={() => router.push(`/route/${id}/recce`)}
+          />
+          <Button
+            label="Sim Drive"
+            variant="secondary"
+            onPress={() => router.push(`/dev/sim?routeId=${id}`)}
           />
         </View>
       ) : null}

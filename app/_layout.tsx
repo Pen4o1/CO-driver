@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { initMapLibre } from '@/features/maps';
 import { configureCoDriverAudio } from '@/features/voice';
+import '@/features/coach/backgroundTask';
 import { colors } from '@/ui/theme';
 
 export default function RootLayout() {

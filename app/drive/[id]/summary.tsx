@@ -1,13 +1,53 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { DriveStats } from '@/core/coach';
+import type { RouteGeometry } from '@/core/types';
+import { DriveSummaryCard } from '@/features/coach/DriveSummaryCard';
+import { getDrive, getRoute } from '@/features/storage';
+import { Button } from '@/ui/Button';
+import { colors, space, type } from '@/ui/theme';
+
+const EMPTY: DriveStats = {
+  distanceM: 0,
+  durationS: 0,
+  movingTimeS: 0,
+  cornersByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+  hairpinsHit: 0,
+  avgSpeedMps: 0,
+};
+
 export default function DriveSummaryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { id, driveId } = useLocalSearchParams<{
+    id: string;
+    driveId?: string;
+  }>();
+  const [geometry, setGeometry] = useState<RouteGeometry | null>(null);
+  const [stats, setStats] = useState<DriveStats>(EMPTY);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      const route = await getRoute(id);
+      if (!cancelled && route) setGeometry(route.candidate.geometry);
+      if (driveId) {
+        const drive = await getDrive(driveId);
+        if (!cancelled && drive?.stats) setStats(drive.stats);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, driveId]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Summary</Text>
-      <Text>{id}</Text>
+      <Text style={styles.kicker}>Drive summary</Text>
+      <DriveSummaryCard geometry={geometry} stats={stats} />
+      <Button label="Home" onPress={() => router.replace('/')} />
     </View>
   );
 }
@@ -15,13 +55,9 @@ export default function DriveSummaryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: colors.bg,
+    padding: space.lg,
+    gap: space.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
+  kicker: { color: colors.muted, fontSize: type.caption, fontWeight: '700' },
 });

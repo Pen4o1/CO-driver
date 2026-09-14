@@ -38,6 +38,11 @@ export default function SettingsScreen() {
         variant="secondary"
         onPress={() => router.push('/dev/notes')}
       />
+      <Button
+        label="Dev · Sim Drive"
+        variant="secondary"
+        onPress={() => router.push('/dev/sim')}
+      />
     </ScrollView>
   );
 }

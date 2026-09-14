@@ -50,6 +50,28 @@ CREATE TABLE IF NOT EXISTS voice_prepare (
   clips_json TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS drives (
+  id TEXT PRIMARY KEY,
+  route_id TEXT NOT NULL,
+  started_at INTEGER NOT NULL,
+  ended_at INTEGER,
+  distance_m REAL NOT NULL,
+  duration_s REAL NOT NULL,
+  stats_json TEXT
+);
+CREATE TABLE IF NOT EXISTS drive_fixes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  drive_id TEXT NOT NULL,
+  t_ms INTEGER NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  speed_mps REAL NOT NULL,
+  heading_deg REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `;
 
 let dbPromise: Promise<SQLiteDatabase> | null = null;
