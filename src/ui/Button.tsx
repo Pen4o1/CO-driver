@@ -1,4 +1,11 @@
-import { Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  type PressableProps,
+  type View,
+} from 'react-native';
+import { forwardRef } from 'react';
 
 import { colors, space, type } from './theme';
 
@@ -7,24 +14,24 @@ type Props = PressableProps & {
   variant?: 'primary' | 'secondary' | 'ghost';
 };
 
-export function Button({
-  label,
-  variant = 'primary',
-  disabled,
-  ...rest
-}: Props) {
+export const Button = forwardRef<View, Props>(function Button(
+  { label, variant = 'primary', disabled, style, ...rest },
+  ref,
+) {
   return (
     <Pressable
+      ref={ref}
       accessibilityLabel={label}
       accessibilityRole="button"
       disabled={disabled}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
-        pressed && styles.pressed,
+        state.pressed && styles.pressed,
         disabled && styles.disabled,
+        typeof style === 'function' ? style(state) : style,
       ]}
       {...rest}
     >
@@ -39,7 +46,7 @@ export function Button({
       </Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   base: {
