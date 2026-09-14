@@ -1,0 +1,47 @@
+---
+description: Apex rally co-driver — core project rules, always applied
+globs:
+alwaysApply: true
+---
+
+# Apex — Rally Co-Driver
+
+**Before doing anything in this repo, read `SPEC.md` and `AGENTS.md` at the repo root.**
+They are the source of truth. If code and spec disagree, the spec wins — or update the spec
+deliberately and say so.
+
+## What we're building
+A React Native + Expo (TypeScript, dev client) mobile app that derives rally-style pace notes
+from a route's geometry and reads them aloud in real time based on GPS, in a co-driver voice:
+*"in 150, left four, tightens, into right six, then 200 straight over crest."*
+
+Users build a route, choose how twisty it should be, and get spoken calls as they drive.
+
+## Non-negotiable rules
+1. **`src/core/**` is pure TypeScript.** No `react`, `react-native`, `expo-*`, `fetch`, or native
+   imports. It must run in plain Node and be unit-testable there. Lint-enforced.
+2. **Domain math lives in `src/core`**, never inside a component. Components render; they don't compute geometry.
+3. **Tests ship with the code** in the same response, not later. `src/core` targets ≥ 90% coverage.
+4. **Explain the algorithm and list assumptions before writing math code.**
+5. **Never invent an API.** If unsure about a Mapbox / Expo / React Native method, say so and
+   verify against the indexed docs before using it.
+6. **Units are always in the name:** `distanceM`, `durationS`, `speedMps`, `bearingDeg`, `radiusM`.
+   A bare `distance` is a bug.
+7. **Strict TypeScript.** No `any`, no `@ts-ignore`, no non-null assertions in feature code.
+   Validate at boundaries with zod.
+8. **No `Math.random()` or `Date.now()` inside `src/core`** — inject `now`/`rng` so tests are deterministic.
+9. **Max 250 lines per file.** Split by feature.
+10. **No new dependency without one sentence of justification** and approval.
+
+## Safety rules (non-negotiable)
+- Never require a tap to receive a call.
+- Nothing destructive or config-changing is reachable while `status === 'driving'`.
+- The driving HUD never shows a modal, permission prompt, or navigation transition.
+- Audio must play with the iOS silent switch on (`playsInSilentModeIOS: true`).
+
+## Response format
+End every response with: **Files changed · Commands to run · What I'm unsure about · What I left out.**
+
+## Scope discipline
+Build only what the current phase prompt asks for. If you spot something else that needs fixing,
+list it under "Suggestions" — do not fix it.
