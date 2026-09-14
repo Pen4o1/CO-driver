@@ -70,8 +70,8 @@ export function ResultsStep() {
       <Button
         label="Preview co-driver calls"
         variant="ghost"
-        disabled
-        onPress={() => undefined}
+        disabled={!candidate}
+        onPress={() => router.push('/dev/notes?draft=1')}
       />
       {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
     </View>

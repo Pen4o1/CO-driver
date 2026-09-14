@@ -1,10 +1,13 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useSettings } from '@/state/settings';
+import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { colors, space, type } from '@/ui/theme';
-import { useSettings } from '@/state/settings';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const providerId = useSettings((s) => s.providerId);
   const setProviderId = useSettings((s) => s.setProviderId);
 
@@ -28,6 +31,11 @@ export default function SettingsScreen() {
         Mock draws a straight line and needs no key. ORS needs
         EXPO_PUBLIC_ORS_API_KEY (free, no card).
       </Text>
+      <Button
+        label="Dev · pace notes"
+        variant="secondary"
+        onPress={() => router.push('/dev/notes')}
+      />
     </View>
   );
 }

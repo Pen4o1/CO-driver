@@ -1,13 +1,15 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { getRoute } from '@/features/storage';
-import { RouteMap } from '@/features/maps/RouteMap';
 import type { RouteCandidate } from '@/core/types';
+import { RouteMap } from '@/features/maps/RouteMap';
+import { getRoute } from '@/features/storage';
+import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
 
 export default function RouteDetailsScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [name, setName] = useState('Route');
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
@@ -74,6 +76,11 @@ export default function RouteDetailsScreen() {
             {(candidate.geometry.lengthM / 1000).toFixed(1)} km · score{' '}
             {Math.round(candidate.breakdown.score)}
           </Text>
+          <Button
+            label="Preview co-driver calls"
+            variant="secondary"
+            onPress={() => router.push(`/dev/notes?routeId=${id}`)}
+          />
         </View>
       ) : null}
     </View>
@@ -92,6 +99,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: space.sm,
   },
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
