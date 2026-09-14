@@ -31,6 +31,25 @@ CREATE TABLE IF NOT EXISTS routes (
   duration_s REAL NOT NULL,
   bbox TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS voice_cache (
+  text_hash TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  voice_id TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  bytes INTEGER NOT NULL,
+  live INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS voice_prepare (
+  route_id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  voice_id TEXT NOT NULL,
+  clip_count INTEGER NOT NULL,
+  bytes INTEGER NOT NULL,
+  live INTEGER NOT NULL,
+  clips_json TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 `;
 
 let dbPromise: Promise<SQLiteDatabase> | null = null;

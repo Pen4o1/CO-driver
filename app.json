@@ -42,6 +42,15 @@
         {
           "locationWhenInUsePermission": "Apex uses your location to place the route start pin."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": true,
+          "enableBackgroundRecording": false
+        }
       ]
     ],
     "experiments": {

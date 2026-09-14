@@ -21,6 +21,8 @@ import type { GradeDisagreement } from './types';
 
 export type DeriveResult = {
   notes: PaceNote[];
+  /** Unfiltered note list. Recce uses this to pre-render chain-radius variants. */
+  rawNotes: PaceNote[];
   disagreements: GradeDisagreement[];
 };
 
@@ -47,14 +49,15 @@ export function derivePaceNotesDetailed(
   const graded = gradeCorners(attributed);
   const merged = mergeJunctions(geometry, graded, steps);
   const straights = detectStraights(line, merged.corners);
-  const raw = buildNotes(
+  const rawNotes = buildNotes(
     merged.corners,
     straights,
     merged.junctions,
     line.lengthM,
   );
   return {
-    notes: filterNotes(raw, filter),
+    notes: filterNotes(rawNotes, filter),
+    rawNotes,
     disagreements: merged.disagreements,
   };
 }

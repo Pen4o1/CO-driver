@@ -81,6 +81,10 @@ export default function RouteDetailsScreen() {
             variant="secondary"
             onPress={() => router.push(`/dev/notes?routeId=${id}`)}
           />
+          <Button
+            label="Prepare voice"
+            onPress={() => router.push(`/route/${id}/prepare`)}
+          />
         </View>
       ) : null}
     </View>

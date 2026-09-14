@@ -5,3 +5,4 @@ export * from './types';
 export * from './geo';
 export * from './routing';
 export * from './pacenotes';
+export * from './voice';

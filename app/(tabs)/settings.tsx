@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { VoiceSettingsPanel } from '@/features/voice/VoiceSettingsPanel';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -12,7 +13,7 @@ export default function SettingsScreen() {
   const setProviderId = useSettings((s) => s.setProviderId);
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.body}>Routing provider</Text>
       <View style={styles.row}>
@@ -31,18 +32,19 @@ export default function SettingsScreen() {
         Mock draws a straight line and needs no key. ORS needs
         EXPO_PUBLIC_ORS_API_KEY (free, no card).
       </Text>
+      <VoiceSettingsPanel />
       <Button
         label="Dev · pace notes"
         variant="secondary"
         onPress={() => router.push('/dev/notes')}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: colors.bg,
     padding: space.lg,
     gap: space.md,
