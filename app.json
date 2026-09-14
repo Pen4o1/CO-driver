@@ -6,11 +6,20 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.apex.rallycodriver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Apex uses your location to place the route start pin. Later it will use location for spoken pace notes while driving."
+      }
     },
     "android": {
+      "package": "com.apex.rallycodriver",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,7 +34,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      "@maplibre/maplibre-react-native",
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Apex uses your location to place the route start pin."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

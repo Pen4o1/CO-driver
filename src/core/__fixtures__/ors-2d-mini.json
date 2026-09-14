@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "segments": [
+          {
+            "distance": 1000,
+            "duration": 120,
+            "steps": [
+              {
+                "distance": 1000,
+                "duration": 120,
+                "type": 11,
+                "instruction": "Head south on Test Road",
+                "name": "Test Road",
+                "way_points": [0, 1]
+              }
+            ]
+          }
+        ],
+        "summary": { "distance": 1000, "duration": 120 },
+        "extras": {
+          "waytypes": {
+            "values": [[0, 1, 3]],
+            "summary": [{ "value": 3, "distance": 1000, "amount": 100 }]
+          }
+        }
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [23.32, 42.7],
+          [23.33, 42.69]
+        ]
+      }
+    }
+  ]
+}

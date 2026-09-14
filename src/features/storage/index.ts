@@ -1,2 +1,3 @@
-/** SQLite schema + repositories. Empty until persistence is wired. */
-export {};
+export { hashKey, memoryCache } from './kvCache';
+export type { StringCache } from './kvCache';
+export { sqliteGeocodeCache, sqliteRouteCache } from './sqliteCache';

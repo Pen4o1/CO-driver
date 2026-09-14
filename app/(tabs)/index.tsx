@@ -1,10 +1,19 @@
+import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+
+import { Button } from '@/ui/Button';
+import { colors, space, type } from '@/ui/theme';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Apex</Text>
-      <Text>Saved routes and recent drives will live here.</Text>
+      <Text style={styles.body}>
+        Drop two pins, draw a route, then later hear the road.
+      </Text>
+      <Link href="/route/new" asChild>
+        <Button label="New route" />
+      </Link>
     </View>
   );
 }
@@ -12,13 +21,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: space.lg,
+    gap: space.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
+  title: { fontSize: type.title, fontWeight: '700', color: colors.text },
+  body: { color: colors.muted, textAlign: 'center' },
 });

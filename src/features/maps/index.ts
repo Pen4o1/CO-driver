@@ -1,2 +1,3 @@
-/** MapLibre wrappers, route layers, heatmaps, offline packs. Empty until Phase 1. */
-export {};
+export { initMapLibre } from './initMapLibre';
+export { RouteMap } from './RouteMap';
+export { decodeTerrariumRgb, queryMapTerrainElevation } from './elevation';

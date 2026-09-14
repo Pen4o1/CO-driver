@@ -3,17 +3,23 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@maplibre/maplibre-react-native": "^11.3.10",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.22",
     "expo-constants": "~57.0.18",
+    "expo-dev-client": "~57.0.19",
     "expo-linking": "~57.0.10",
+    "expo-location": "~57.0.17",
     "expo-router": "~57.0.21",
+    "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-screens": "~4.26.0",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/jest": "29.5.14",
@@ -40,6 +46,9 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
-    "passWithNoTests": true
+    "passWithNoTests": true,
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }

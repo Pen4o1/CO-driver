@@ -1,0 +1,8 @@
+{
+  "name": "sea-level-and-vitosha",
+  "encoding": "terrarium",
+  "pixels": [
+    { "r": 128, "g": 0, "b": 0, "expectedM": 0 },
+    { "r": 130, "g": 39, "b": 0, "expectedM": 551 }
+  ]
+}

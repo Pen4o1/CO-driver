@@ -2,6 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "resolveJsonModule": true,
+    "types": ["jest"],
     "paths": {
       "@/core": ["./src/core"],
       "@/core/*": ["./src/core/*"],
@@ -10,7 +12,9 @@
       "@/ui": ["./src/ui"],
       "@/ui/*": ["./src/ui/*"],
       "@/data": ["./src/data"],
-      "@/data/*": ["./src/data/*"]
+      "@/data/*": ["./src/data/*"],
+      "@/state": ["./src/state"],
+      "@/state/*": ["./src/state/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
