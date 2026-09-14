@@ -4,6 +4,7 @@ import type { LatLng, RouteCandidate, RouteStyle } from '@/core/types';
 import { buildRouteGeometry } from '@/core/geo/buildGeometry';
 
 import { extraBlockByKeys } from './orsExtras';
+import { roadSharesFromOrsExtras } from './orsRoadShares';
 import type { OrsCoord, OrsDirections, OrsFeature } from './orsSchema';
 import { mapOrsSteps } from './orsSteps';
 
@@ -54,6 +55,11 @@ function mapFeature(
     waypointsUsed,
     ascentM: derived?.ascentM ?? null,
     descentM: derived?.descentM ?? null,
+    roadShares: roadSharesFromOrsExtras(
+      extras,
+      geometry.cumulative,
+      geometry.lengthM,
+    ),
   };
 }
 

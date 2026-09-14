@@ -19,6 +19,8 @@ export type RouteGeometry = {
 
 export type RouteStyle = 'twist' | 'balanced' | 'cruise' | 'gentle' | 'custom';
 
+export type WaypointStrategy = 'aggressive' | 'moderate' | 'none';
+
 export type ScoringWeights = {
   curviness: number;
   hairpinDensity: number;
@@ -40,6 +42,7 @@ export type RouteProfile = {
   minGradeTolerance: TurnGrade;
   maxDetourRatio: number;
   weights: ScoringWeights;
+  waypointStrategy: WaypointStrategy;
   providerProfile: string;
   providerParams: Record<string, unknown>;
 };
@@ -51,10 +54,16 @@ export type CurvinessBreakdown = {
   curvatureDegPerKm: number;
   hairpinCount: number;
   turnDensityPerKm: number;
-  motorwayShare: number;
-  lowSpeedRoadShare: number;
+  motorwayShare: number | null;
+  lowSpeedRoadShare: number | null;
   elevationVariationM: number | null;
   tags: string[];
+};
+
+export type RoadShares = {
+  motorwayShare: number | null;
+  lowSpeedRoadShare: number | null;
+  unpavedShare: number | null;
 };
 
 export type RouteStep = {
@@ -83,6 +92,7 @@ export type RouteCandidate = {
   waypointsUsed: LatLng[];
   ascentM: number | null;
   descentM: number | null;
+  roadShares: RoadShares;
 };
 
 export type NoteType =

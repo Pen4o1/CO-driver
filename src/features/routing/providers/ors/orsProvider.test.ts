@@ -1,4 +1,4 @@
-import { createOrsProvider } from './orsProvider';
+import { createOrsProvider, orsRequestBody } from './orsProvider';
 import { memoryCache } from '@/features/storage/kvCache';
 import type { HttpGet } from '../../httpErrors';
 import mini from '@/core/__fixtures__/ors-2d-mini.json';
@@ -124,5 +124,23 @@ describe('createOrsProvider', () => {
     await expect(
       provider.route({ waypoints, profileId: 'balanced' }),
     ).rejects.toMatchObject({ code: 'bad-key' });
+  });
+
+  it('nests round_trip and avoid_features under options', () => {
+    const body = orsRequestBody({
+      waypoints: [{ lat: 42.7, lng: 23.32 }],
+      profileId: 'twist',
+      providerParams: { avoidFeatures: ['highways', 'tollways'] },
+      roundTrip: { lengthM: 60000, points: 4, seed: 2 },
+    });
+    const options = body.options as {
+      avoid_features: string[];
+      round_trip: { length: number; points: number; seed: number };
+    };
+    expect(options.avoid_features).toEqual(['highways', 'tollways']);
+    expect(options.round_trip).toEqual({ length: 60000, points: 4, seed: 2 });
+    expect(body).not.toHaveProperty('round_trip');
+    expect(body).not.toHaveProperty('avoid_features');
+    expect(body).not.toHaveProperty('alternative_routes');
   });
 });

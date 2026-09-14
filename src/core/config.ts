@@ -11,6 +11,11 @@ export const TERRARIUM_ENCODING = 'terrarium' as const;
 export const ORS_DIRECTIONS_URL =
   'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
 
+export const VALHALLA_DEFAULT_URL = 'https://valhalla1.openstreetmap.de';
+
+export const OSRM_NEAREST_URL =
+  'https://router.project-osrm.org/nearest/v1/driving';
+
 export const PHOTON_SEARCH_URL = 'https://photon.komoot.io/api';
 
 export const APP_USER_AGENT =

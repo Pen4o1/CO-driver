@@ -5,11 +5,18 @@ import type {
   RouteStyle,
 } from '@/core/types';
 
+export type RoundTripRequest = {
+  lengthM: number;
+  points: number;
+  seed: number;
+};
+
 export type RouteRequest = {
   waypoints: LatLng[];
   profileId: RouteStyle;
   providerParams?: Record<string, unknown>;
   alternatives?: boolean;
+  roundTrip?: RoundTripRequest;
 };
 
 export type RoutingProvider = {

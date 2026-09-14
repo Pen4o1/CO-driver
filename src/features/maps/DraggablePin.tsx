@@ -15,6 +15,7 @@ type Props = {
   id: string;
   kind: PinKind;
   coordinate: LatLng;
+  draggable?: boolean;
   onChange: (next: LatLng) => void;
 };
 
@@ -28,13 +29,19 @@ function coordinateFromEvent(
   return fromLngLat([lngLat[0], lngLat[1]]);
 }
 
-export function DraggablePin({ id, kind, coordinate, onChange }: Props) {
+export function DraggablePin({
+  id,
+  kind,
+  coordinate,
+  draggable = true,
+  onChange,
+}: Props) {
   const color = kind === 'start' ? colors.pinStart : colors.pinEnd;
   return (
     <ViewAnnotation
       id={id}
       lngLat={toLngLat(coordinate)}
-      draggable
+      draggable={draggable}
       anchor="bottom"
       onDragEnd={(event) => {
         const next = coordinateFromEvent(event);

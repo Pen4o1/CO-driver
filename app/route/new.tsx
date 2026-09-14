@@ -1,45 +1,27 @@
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
 
-import { AddressSearch } from '@/features/geocoding/AddressSearch';
-import { getCurrentLatLng } from '@/features/maps/currentLocation';
+import { PinsStep } from '@/features/routing/builder/PinsStep';
+import { ResultsStep } from '@/features/routing/builder/ResultsStep';
+import { StyleStep } from '@/features/routing/builder/StyleStep';
+import { runCandidateSearch } from '@/features/routing/runCandidateSearch';
 import { RouteMap } from '@/features/maps/RouteMap';
-import { usePreviewRoute } from '@/features/routing/usePreviewRoute';
 import { useRouteDraft } from '@/state/routeDraft';
 import { Button } from '@/ui/Button';
-import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
-import { colors, space, type } from '@/ui/theme';
-
-function formatPoint(
-  label: string | null,
-  point: { lat: number; lng: number } | null,
-) {
-  if (!point) {
-    return 'Not set';
-  }
-  if (label) {
-    return label;
-  }
-  return `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}`;
-}
+import { colors, space } from '@/ui/theme';
 
 export default function NewRouteScreen() {
-  usePreviewRoute();
   const start = useRouteDraft((s) => s.start);
   const end = useRouteDraft((s) => s.end);
-  const startLabel = useRouteDraft((s) => s.startLabel);
-  const endLabel = useRouteDraft((s) => s.endLabel);
-  const activePin = useRouteDraft((s) => s.activePin);
+  const step = useRouteDraft((s) => s.step);
+  const mode = useRouteDraft((s) => s.mode);
   const candidate = useRouteDraft((s) => s.candidate);
   const errorMessage = useRouteDraft((s) => s.errorMessage);
   const isRouting = useRouteDraft((s) => s.isRouting);
   const setStart = useRouteDraft((s) => s.setStart);
   const setEnd = useRouteDraft((s) => s.setEnd);
-  const setActivePin = useRouteDraft((s) => s.setActivePin);
+  const setStep = useRouteDraft((s) => s.setStep);
   const placeOnMap = useRouteDraft((s) => s.placeOnMap);
-  const setErrorMessage = useRouteDraft((s) => s.setErrorMessage);
-  const [locating, setLocating] = useState(false);
 
   if (Platform.OS === 'web') {
     return (
@@ -52,75 +34,59 @@ export default function NewRouteScreen() {
     );
   }
 
+  const canContinuePins =
+    mode === 'loop' ? Boolean(start) : Boolean(start && end);
+
   return (
     <View style={styles.screen}>
       <RouteMap
         start={start}
-        end={end}
+        end={mode === 'loop' ? null : end}
         geometry={candidate?.geometry ?? null}
+        heat={step === 3}
+        interactivePins={step !== 3}
         onStartChange={(point) => setStart(point)}
         onEndChange={(point) => setEnd(point)}
-        onMapPress={placeOnMap}
+        onMapPress={step === 1 ? placeOnMap : undefined}
       />
       <View style={styles.overlay} pointerEvents="box-none">
-        <Card style={styles.panel}>
-          <AddressSearch
-            onPick={(hit) => {
-              if (activePin === 'start') {
-                setStart({ lat: hit.lat, lng: hit.lng }, hit.label);
-                setActivePin('end');
-              } else {
-                setEnd({ lat: hit.lat, lng: hit.lng }, hit.label);
-              }
-            }}
+        <View style={styles.steps}>
+          <Chip
+            label="1 Pins"
+            selected={step === 1}
+            onPress={() => setStep(1)}
           />
-          <View style={styles.row}>
-            <Chip
-              label={`Start · ${formatPoint(startLabel, start)}`}
-              selected={activePin === 'start'}
-              onPress={() => setActivePin('start')}
-            />
-            <Chip
-              label={`End · ${formatPoint(endLabel, end)}`}
-              selected={activePin === 'end'}
-              onPress={() => setActivePin('end')}
-            />
-          </View>
+          <Chip
+            label="2 Style"
+            selected={step === 2}
+            onPress={() => canContinuePins && setStep(2)}
+          />
+          <Chip
+            label="3 Results"
+            selected={step === 3}
+            onPress={() => undefined}
+          />
+        </View>
+        {step === 1 ? <PinsStep /> : null}
+        {step === 2 ? <StyleStep /> : null}
+        {step === 3 ? <ResultsStep /> : null}
+        {step === 1 ? (
           <Button
-            label={locating ? 'Locating…' : 'Use my location'}
-            variant="secondary"
-            disabled={locating}
-            onPress={async () => {
-              setLocating(true);
-              const result = await getCurrentLatLng();
-              setLocating(false);
-              if (!result.ok) {
-                setErrorMessage(result.error.message);
-                return;
-              }
-              setStart(result.value, 'Current location');
-              setActivePin('end');
+            label="Next · style"
+            disabled={!canContinuePins}
+            onPress={() => setStep(2)}
+          />
+        ) : null}
+        {step === 2 ? (
+          <Button
+            label={isRouting ? 'Generating…' : 'Find routes'}
+            disabled={isRouting}
+            onPress={() => {
+              void runCandidateSearch();
             }}
           />
-          <Text style={styles.hint}>
-            Tap the map to drop the active pin. Drag a pin to move it.
-          </Text>
-          {isRouting ? (
-            <Text style={styles.meta}>Requesting route…</Text>
-          ) : null}
-          {candidate ? (
-            <Text style={styles.meta}>
-              {(candidate.geometry.lengthM / 1000).toFixed(1)} km ·{' '}
-              {Math.round(candidate.breakdown.durationS / 60)} min
-              {candidate.ascentM !== null
-                ? ` · +${Math.round(candidate.ascentM)} m`
-                : ''}
-            </Text>
-          ) : null}
-          {errorMessage ? (
-            <Text style={styles.error}>{errorMessage}</Text>
-          ) : null}
-        </Card>
+        ) : null}
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       </View>
     </View>
   );
@@ -133,11 +99,9 @@ const styles = StyleSheet.create({
     left: space.sm,
     right: space.sm,
     top: space.sm,
+    gap: space.sm,
   },
-  panel: { gap: space.sm },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  hint: { color: colors.muted, fontSize: type.caption },
-  meta: { color: colors.text, fontWeight: '600' },
+  steps: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   error: { color: colors.danger },
   fallback: {
     flex: 1,

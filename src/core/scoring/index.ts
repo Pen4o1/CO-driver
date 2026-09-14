@@ -1,2 +1,10 @@
-/** Curviness metrics + candidate ranking. Empty until Phase 2. */
-export {};
+export { scoreCandidates, scoreSingle, rawMetricsFor } from './curviness';
+export type { RawMetrics } from './curviness';
+export { dedupeCandidates, sameRoad } from './dedupe';
+export { pickCandidates, vsFastestLabel } from './rank';
+export { gradeHeatSegments } from './gradeHeat';
+export type { GradeSegment } from './gradeHeat';
+export { buildTags } from './tags';
+export { gradeFromRadiusM, isHairpin } from './gradeFromRadius';
+export { scoreCorners } from './scoreCorners';
+export { shareWhere } from './roadShares';

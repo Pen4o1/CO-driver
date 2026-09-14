@@ -5,6 +5,8 @@ export function emptyBreakdown(
   lengthM: number,
   durationS: number,
   elevationVariationM: number | null,
+  motorwayShare: number | null = null,
+  lowSpeedRoadShare: number | null = null,
 ): CurvinessBreakdown {
   return {
     score: 0,
@@ -13,8 +15,8 @@ export function emptyBreakdown(
     curvatureDegPerKm: 0,
     hairpinCount: 0,
     turnDensityPerKm: 0,
-    motorwayShare: 0,
-    lowSpeedRoadShare: 0,
+    motorwayShare,
+    lowSpeedRoadShare,
     elevationVariationM,
     tags: [],
   };

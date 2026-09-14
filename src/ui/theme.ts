@@ -11,7 +11,22 @@ export const colors = {
   route: '#7DD3FC',
   pinStart: '#34D399',
   pinEnd: '#F87171',
+  grade1: '#E11D48',
+  grade2: '#F97316',
+  grade3: '#F59E0B',
+  grade4: '#EAB308',
+  grade5: '#4ADE80',
+  grade6: '#22D3EE',
 } as const;
+
+export const gradeColor: Record<1 | 2 | 3 | 4 | 5 | 6, string> = {
+  1: colors.grade1,
+  2: colors.grade2,
+  3: colors.grade3,
+  4: colors.grade4,
+  5: colors.grade5,
+  6: colors.grade6,
+};
 
 export const space = {
   xs: 6,

@@ -33,6 +33,11 @@ function straightCandidate(
     waypointsUsed: waypoints,
     ascentM: null,
     descentM: null,
+    roadShares: {
+      motorwayShare: null,
+      lowSpeedRoadShare: null,
+      unpavedShare: null,
+    },
   };
 }
 

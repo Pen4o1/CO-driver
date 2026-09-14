@@ -2,7 +2,7 @@
 
 Rally co-driver for normal roads. Build a route, pick how twisty it should be, and hear pace notes in real time.
 
-This is Phase 1: map shell, domain types, geometry, and OpenRouteService routing. See `MAP_SETUP.md` before you try to run the map.
+This is Phase 2: style profiles, candidate generation (Valhalla + ORS + waypoint injection), curviness scoring, and a 3-step route builder.
 
 ## Stack
 

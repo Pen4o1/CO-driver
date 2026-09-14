@@ -34,22 +34,21 @@ export function parseRetryAfterMs(
 }
 
 export function errorFromHttpStatus(
+  service: string,
   status: number,
   bodyText: string,
   retryAfterMs?: number,
 ): AppError {
   if (status === 401) {
-    return appError('bad-key', 'OpenRouteService rejected the API key.');
+    return appError('bad-key', `${service} rejected the API key.`);
   }
   if (status === 403) {
-    return appError('forbidden', 'OpenRouteService forbade this request.');
+    return appError('forbidden', `${service} forbade this request.`);
   }
   if (status === 429) {
-    return appError(
-      'rate-limited',
-      'OpenRouteService rate-limited the request.',
-      { retryAfterMs },
-    );
+    return appError('rate-limited', `${service} rate-limited the request.`, {
+      retryAfterMs,
+    });
   }
   if (status === 404 || status === 2010) {
     return appError('no-route', 'No route found between these points.');
@@ -59,7 +58,7 @@ export function errorFromHttpStatus(
   }
   return appError(
     'unknown',
-    `OpenRouteService error ${status}: ${bodyText.slice(0, 180)}`,
+    `${service} error ${status}: ${bodyText.slice(0, 180)}`,
   );
 }
 

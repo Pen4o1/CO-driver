@@ -1,7 +1,11 @@
 import { APP_USER_AGENT, ORS_DIRECTIONS_URL } from '@/core/config';
 import { appError } from '@/core/errors';
 import { buildRouteGeometry } from '@/core/geo';
-import type { RouteRequest, RoutingProvider } from '@/core/routing';
+import type {
+  RoundTripRequest,
+  RouteRequest,
+  RoutingProvider,
+} from '@/core/routing';
 import type { LatLng, RouteGeometry } from '@/core/types';
 
 import {
@@ -43,6 +47,61 @@ function avoidFeaturesFrom(
   );
 }
 
+function orsPreference(
+  params: Record<string, unknown> | undefined,
+): 'recommended' | 'fastest' | 'shortest' {
+  const raw = params?.orsPreference;
+  if (raw === 'fastest' || raw === 'shortest' || raw === 'recommended') {
+    return raw;
+  }
+  return 'recommended';
+}
+
+function buildOptions(req: RouteRequest): Record<string, unknown> | undefined {
+  const avoid = avoidFeaturesFrom(req.providerParams);
+  const roundTrip = req.roundTrip;
+  if (avoid.length === 0 && !roundTrip) {
+    return undefined;
+  }
+  return {
+    ...(avoid.length > 0 ? { avoid_features: avoid } : {}),
+    ...(roundTrip
+      ? {
+          round_trip: {
+            length: roundTrip.lengthM,
+            points: roundTrip.points,
+            seed: roundTrip.seed,
+          },
+        }
+      : {}),
+  };
+}
+
+export function orsRequestBody(req: RouteRequest): Record<string, unknown> {
+  const options = buildOptions(req);
+  return {
+    coordinates: toOrsCoordinates(req.waypoints),
+    preference: orsPreference(req.providerParams),
+    elevation: true,
+    extra_info: ['waytype', 'waycategory', 'steepness', 'surface'],
+    units: 'm',
+    language: 'en',
+    instructions: true,
+    ...(req.alternatives && !req.roundTrip
+      ? {
+          alternative_routes: {
+            target_count: 3,
+            weight_factor: 1.6,
+            share_factor: 0.6,
+          },
+        }
+      : {}),
+    ...(options ? { options } : {}),
+  };
+}
+
+export type { RoundTripRequest };
+
 export function createOrsProvider(deps: OrsProviderDeps): RoutingProvider {
   const sleep = deps.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   const now = deps.now ?? (() => Date.now());
@@ -58,31 +117,7 @@ export function createOrsProvider(deps: OrsProviderDeps): RoutingProvider {
         'Missing EXPO_PUBLIC_ORS_API_KEY. Get a free key at openrouteservice.org.',
       );
     }
-    const body = {
-      coordinates: toOrsCoordinates(req.waypoints),
-      preference: 'recommended',
-      elevation: true,
-      extra_info: ['waytype', 'waycategory', 'steepness', 'surface'],
-      units: 'm',
-      language: 'en',
-      instructions: true,
-      ...(req.alternatives
-        ? {
-            alternative_routes: {
-              target_count: 3,
-              weight_factor: 1.6,
-              share_factor: 0.6,
-            },
-          }
-        : {}),
-      ...(avoidFeaturesFrom(req.providerParams).length > 0
-        ? {
-            options: {
-              avoid_features: avoidFeaturesFrom(req.providerParams),
-            },
-          }
-        : {}),
-    };
+    const body = orsRequestBody(req);
     const cacheKey = hashKey(JSON.stringify(body));
     const cached = deps.cache ? await deps.cache.get(cacheKey) : null;
     if (cached) {
@@ -110,6 +145,7 @@ export function createOrsProvider(deps: OrsProviderDeps): RoutingProvider {
     if (!response.ok) {
       const text = await response.text();
       throw errorFromHttpStatus(
+        'OpenRouteService',
         response.status,
         text,
         parseRetryAfterMs(response.headers.get('retry-after'), now()),
@@ -126,8 +162,9 @@ export function createOrsProvider(deps: OrsProviderDeps): RoutingProvider {
   return {
     id: 'ors',
     async route(req) {
-      if (req.waypoints.length < 2) {
-        throw appError('no-route', 'Need a start and an end pin.');
+      const minPoints = req.roundTrip ? 1 : 2;
+      if (req.waypoints.length < minPoints) {
+        throw appError('no-route', 'Need a start pin.');
       }
       try {
         const raw = await requestDirections(req, false);

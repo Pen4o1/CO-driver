@@ -16,7 +16,8 @@ describe('createProviderRegistry', () => {
   it('selects providers by id without touching feature code', () => {
     expect(registry.get('mock').id).toBe('mock');
     expect(registry.get('ors').id).toBe('ors');
-    expect(registry.ids()).toEqual(['ors', 'mock']);
+    expect(registry.get('valhalla').id).toBe('valhalla');
+    expect(registry.ids()).toEqual(['ors', 'valhalla', 'mock']);
   });
 
   it('falls back to ORS for an unknown id', () => {

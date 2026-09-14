@@ -21,3 +21,7 @@ export { frechetDistanceM } from './frechet';
 export { deriveAscentDescent, smoothElevationM } from './elevation';
 export type { AscentDescent } from './elevation';
 export { boundingBox, buildRouteGeometry } from './buildGeometry';
+export { destinationPoint } from './destination';
+export { overlapShare } from './overlap';
+export { decodePolyline } from './polyline6';
+export { clamp } from './clamp';
