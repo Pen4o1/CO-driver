@@ -25,6 +25,10 @@
 | Thing | Where |
 |---|---|
 | **OpenRouteService free key** (no card, 2,500 req/day) | openrouteservice.org → sign up |
+
+> 🔬 **The API spike is done.** `MAPS-FREE-STACK.md` **§11** records what the live APIs actually
+> do — including three corrections to my first draft (`avoid_features` nesting, no `summary.ascent`,
+> and `alternative_routes` not producing genuinely different roads). Read §11 before Phases 1 and 2.
 | Node 20+, Expo CLI, `eas-cli`, Xcode / Android Studio | local machine |
 | A dev client build (MapLibre is native code and **does not run in Expo Go**) | `npx expo prebuild && npx expo run:ios` / `run:android` |
 | Car mount + a mate to watch the phone while you drive | 🚗 |
@@ -133,7 +137,9 @@ end = a point ~20 km away → confirm the ORS route draws and is cached (second 
 
 This is the feature that makes the app different from Google Maps.
 
-> ⚠️ **Paste the Phase 2 prompt below PLUS the deltas in `MAPS-FREE-STACK.md` §8.** With Valhalla's `use_highways`/`use_trails` and ORS `round_trip` / `alternative_routes`, much of the candidate-generation hack below becomes unnecessary — the deltas say exactly what to drop.
+> ⚠️ **Paste the Phase 2 prompt below PLUS the deltas in `MAPS-FREE-STACK.md` §8.**
+> **Waypoint injection is PRIMARY, not a fallback** — the live spike (§11) showed `alternative_routes`
+> returning 3 "alternatives" that were really 2 roads, one pair 28 m apart.
 
 **Prompt:**
 
@@ -175,7 +181,8 @@ B. CANDIDATE GENERATION (/src/features/routing/generateCandidates.ts):
    Run requests with concurrency 3 and a global timeout. Partial failure is fine:
    score whatever came back. Batch/cache aggressively — every Directions request costs money.
 
-C. DEDUPE: two candidates are the same road if frechetDistance < 0.15 * length. Keep the faster one.
+C. DEDUPE: same road if frechetDistance < 0.15 * min(lenA,lenB) OR overlap share > 0.85
+   (>85% of B's vertices within 50 m of A). Keep the faster. See SPEC.md §7.
 
 D. CURVINESS SCORER (/src/core/scoring/curviness.ts) — implement exactly SPEC.md §Scoring:
    curvatureDegPerKm, hairpinCount, turnDensityPerKm, motorwayShare,

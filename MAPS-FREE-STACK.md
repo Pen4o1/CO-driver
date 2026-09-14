@@ -11,8 +11,8 @@ the open stack has primitives Mapbox *doesn't have at all*.
 | What the app needs | Mapbox | Free stack |
 |---|---|---|
 | "Prefer twisty roads" | **Doesn't exist.** Phase 2 had to invent candidate-generation + geometric scoring to fake it | **Native.** Valhalla `use_highways: 0` / `use_trails: 1` directly penalises motorways and favours minor roads |
-| "Avoid motorways / tolls / ferries" | Supported | Supported (ORS `avoid_features`, OSRM `exclude`, Valhalla factors) |
-| Elevation for crest/jump notes | Mapbox Terrain-RGB (paid) | **Free, no key**: AWS Terrarium tiles + Valhalla `/height` + ORS `elevation: true` returns `ascent`/`descent` per route |
+| "Avoid motorways / tolls / ferries" | Supported | Supported (ORS `options.avoid_features`, OSRM `exclude`, Valhalla factors) |
+| Elevation for crest/jump notes | Mapbox Terrain-RGB (paid) | **Free, no key**: ORS `elevation: true` returns 3D geometry (height inline, aligned to your polyline), plus AWS Terrarium tiles and Valhalla `/height` for denser profiles |
 | Loop-route generator | Build it yourself | **ORS has `round_trip`** with `length` + `seed` built in — replaces a whole chunk of Phase 2 |
 | Map matching (for voice-recce) | Paid | Valhalla `/trace_route` — free |
 | Map tiles | Paid after free tier | **OpenFreeMap: no key, no registration, no limits** |
@@ -34,7 +34,7 @@ a public launch. §6 covers the self-host path for when that matters.
 | **Map renderer** | `@maplibre/maplibre-react-native` | **None** | MIT, maintained fork of Mapbox GL SDK v9. API is near-identical to `@rnmapbox/maps` |
 | **Map tiles** | OpenFreeMap `https://tiles.openfreemap.org/styles/liberty` | **None** | Also `/positron` (light) and `/bright`. Becomes your dark map style later |
 | **Terrain / DEM** | AWS `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png` (encoding: `terrarium`) | **None** | Enables `queryTerrainElevation` for crest notes + 3D terrain |
-| **Routing — primary** | **OpenRouteService** `api.openrouteservice.org` | Free key, no card | 2,500 req/day, 40,000/month. `avoid_features`, `alternative_routes`, `round_trip`, `elevation`, `extra_info` |
+| **Routing — primary** | **OpenRouteService** `api.openrouteservice.org` | Free key, no card | 2,500 req/day, 40,000/month. `options.avoid_features`, `alternative_routes`, `options.round_trip`, `elevation`, `extra_info` |
 | **Routing — secondary** | **Valhalla** (FOSSGIS) `valhalla1.openstreetmap.de` | **None** | `use_highways`/`use_trails`, `/height`, `/trace_route` map-matching |
 | **Routing — dev/fallback** | **OSRM demo** `router.project-osrm.org` | **None** | Fast, no elevation. Good for tests |
 | **Geocoding** | **Photon** `photon.komoot.io` (or Nominatim) | **None** | Set a real `User-Agent`; Nominatim is 1 req/s max |
@@ -47,24 +47,32 @@ Nothing in this list asks for a credit card. That's the whole point.
 
 ## 3. The three API calls, side by side
 
-**Route (ORS)** — this is your Phase 1/2 provider:
+**Route (ORS)** — this is your Phase 1/2 provider. **Corrected against the live API on 2026-09-14.**
 ```
 POST https://api.openrouteservice.org/v2/directions/driving-car/geojson
 Authorization: <your free ORS key>
 {
   "coordinates": [[23.3219,42.6977],[23.3000,42.6400]],
-  "preference": "recommended",          //  or "fastest" | "shortest"
-  "avoid_features": ["highways","tollways","ferries","fords"],
+  "preference": "recommended",           //  or "fastest" | "shortest"
+  "options": {                           //  ⚠️ avoid_features MUST be nested here.
+    "avoid_features": ["highways","tollways","ferries","fords"]
+  },                                     //  Top-level avoid_features => error 2012 Unknown parameter
   "alternative_routes": { "target_count": 3, "weight_factor": 1.6, "share_factor": 0.6 },
-  "round_trip": { "length": 60000, "points": 4, "seed": 42 },   // loop mode only
-  "elevation": true,                    //  -> summary.ascent / summary.descent
-  "extra_info": ["waytype","surface","steepness","tollways"],
+  "elevation": true,                     //  -> 3D coords [lng,lat,z]. NOT summary.ascent/descent!
+  "extra_info": ["waytype","waycategory","steepness","surface"],
   "units": "m", "language": "en", "instructions": true
 }
 ```
-Returns GeoJSON `features[0].geometry` + `properties.summary {distance, duration, ascent, descent}`
-+ `properties.segments[].steps[]` (maneuvers) + `properties.extras.<name>.values` (the per-segment
-road attributes you need for scoring).
+Returns GeoJSON `features[*].geometry` (**`[lng,lat]` or `[lng,lat,z]`** — 3D when `elevation: true`)
++ `properties.summary {distance, duration}` + `properties.segments[].steps[]` (maneuvers)
++ `properties.extras.<name>` (road attributes — see §11 for the exact shape).
+
+`options.avoid_features` accepts **only** `highways | tollways | ferries | fords` for driving-*.
+There is no `unpaved` — handle that client-side from the `surface` extra.
+
+**Loop mode:** `round_trip` also belongs inside `options` per the current docs
+(`options.round_trip {length, points, seed}`). Older examples show it top-level, so **test both
+spellings once and record which works** (see §11).
 
 **Valhalla twisty route** — when you want direct control over "how twisty":
 ```
@@ -82,6 +90,11 @@ POST https://valhalla1.openstreetmap.de/route
 parameters replaces most of the candidate-generation hack in Phase 2.** Note `costing: "motorcycle"`
 is the one with `use_trails`; `auto` has `use_highways`/`use_tolls`/`use_ferry`. For a sports-car
 route, motorcycle costing with `use_highways: 0` is exactly the behaviour you want.
+
+**Elevation without an extra API call:** setting `"elevation": true` on the ORS route puts height
+directly into the route geometry as a third ordinate (`[lng, lat, 551]` …). Prefer this over a
+separate DEM call — it's free, already aligned to your polyline, and one request instead of two.
+Valhalla's `/height` remains the fallback when you need a denser profile:
 
 **Valhalla elevation profile** (crest / downhill / jump notes):
 ```
@@ -170,11 +183,18 @@ RoutingProvider interface with an OpenRouteService implementation.
    Add providers/ors/orsProvider.ts as the FIRST implementation:
    POST https://api.openrouteservice.org/v2/directions/driving-car/geojson
    Auth header from EXPO_PUBLIC_ORS_API_KEY (free key, no card).
-   Map ORS response -> RouteCandidate: geometry from features[0].geometry (GeoJSON is
-   [lng,lat] — convert to {lat,lng} at the boundary, ONLY here), steps from
-   properties.segments[].steps, ascent/descent from properties.summary,
-   and per-segment road attributes from properties.extras when extra_info is requested.
-   Validate the whole response with zod before it enters the app.
+   Map ORS response -> RouteCandidate:
+     - geometry from features[*].geometry. It is [lng,lat] normally, or [lng,lat,z] when
+       elevation:true. Split: coords stay 2D {lat,lng}; the z values become
+       RouteGeometry.elevationM (same index as coords). Do this conversion at this boundary ONLY.
+     - steps from properties.segments[].steps
+     - ascentM/descentM DERIVED from elevationM after a ~100 m smoothing pass.
+       summary.ascent/descent are NOT populated by elevation:true — verified live, don't use them.
+     - road attributes from properties.extras as INDEX TRIPLES [[startIdx,endIdx,value]] over the
+       geometry coords; combine with `cumulative` for metres. See MAPS-FREE-STACK.md §11 for the
+       exact shape and the "waytype" vs "waytypes" key gotcha.
+   Validate the whole response with zod before it enters the app. The zod schema must accept
+   BOTH 2- and 3-element coordinate tuples.
    Handle: 401 (bad key), 403, 429 (back off, respect retry-after), 404/no-route, offline.
 
 4. PROVIDER FALLBACK: add a simple `src/features/routing/providers/registry.ts` that selects a
@@ -217,6 +237,12 @@ PHASE 2 REVISION — the twisty-route problem is now mostly solved for us. Do NO
 waypoint-injection heuristics from the original brief unless the simple approach demonstrably
 fails. Instead, in this order:
 
+0. SPEND ONE MINUTE ON EXPECTATIONS. The Sofia spike (MAPS-FREE-STACK.md §11) proved that
+   `alternative_routes` alone does NOT produce genuinely different roads on this corridor:
+   3 features, 2 distinct roads, one pair 28 m apart. So route differentiation comes from
+   WAYPOINT INJECTION (section 6 below) — that is primary, not a fallback. Keep scoring and
+   dedupe exactly as specified; they are what turn a pile of near-duplicates into a ranked choice.
+
 1. VALHALLA AS THE PRIMARY TWISTY PROVIDER. Implement providers/valhalla/valhallaProvider.ts:
    POST https://valhalla1.openstreetmap.de/route
    costing "motorcycle", costing_options.motorcycle.use_highways (0..1) and .use_trails (0..1).
@@ -233,9 +259,12 @@ fails. Instead, in this order:
    - avoid_features per profile (highways/tollways/ferries/fords)
    - LOOP MODE uses ORS round_trip { length, points: 4, seed } — DELETE the bearing-walk hack
      from the original Phase 2 brief. It's a built-in feature now.
-   - elevation: true and extra_info: ["waytype","surface","steepness"] -> map waytype to
-     lowSpeedRoadShare and motorwayShare, and use ascent/descent for elevationVariationM.
+   - elevation: true and extra_info: ["waytype","waycategory","steepness","surface"] ->
+     map waytype to lowSpeedRoadShare and (waycategory & 1) to motorwayShare, and derive
+     ascentM/descentM from RouteGeometry.elevationM (NOT summary.ascent — verified absent).
      This REPLACES the "parse maxspeed" approach, which OSM exposes inconsistently.
+     Extras arrive as index triples [[startIdx,endIdx,value]] over the geometry coords —
+     combine with `cumulative` to get metres. Read the key as "waytype" OR "waytypes".
 
 3. KEEP the curviness SCORER and the ranking exactly as specified in SPEC.md §Scoring — it's now
    scoring genuinely different roads instead of trying to manufacture them, which is a much better
@@ -279,12 +308,13 @@ and eyeball the results:
 
 ```bash
 # free ORS key from openrouteservice.org first (no card required)
+# NOTE the nesting: avoid_features lives INSIDE "options". Top-level => error 2012.
 curl -X POST 'https://api.openrouteservice.org/v2/directions/driving-car/geojson' \
   -H 'Authorization: YOUR_FREE_KEY' -H 'Content-Type: application/json' \
-  -d '{"coordinates":[[23.3219,42.6977],[23.4000,42.6000]],
-       "avoid_features":["highways"],
+  -d '{"coordinates":[[23.3219,42.6977],[23.2483,42.6187]],
+       "options":{"avoid_features":["highways","tollways"]},
        "alternative_routes":{"target_count":3,"weight_factor":1.6,"share_factor":0.6},
-       "elevation":true,"extra_info":["waytype","steepness"]}' | head -c 2000
+       "elevation":true,"extra_info":["waytype","waycategory","steepness","surface"]}' | head -c 2000
 
 # Valhalla, no key needed
 curl -X POST 'https://valhalla1.openstreetmap.de/route' -H 'Content-Type: application/json' \
@@ -303,3 +333,70 @@ values and not all-zeros for Bulgarian roads. If either fails, you know *now* in
 and the waypoint strategy is the answer.
 
 Save each response as fixture JSON in `src/core/__fixtures__/` — those become your tests.
+
+
+---
+
+## 11. Verified API facts (live spike, Sofia → Zlatnite Mostove, 2026-09-14)
+
+Fixture: `src/core/__fixtures__/ors-sofia-zlatnite-mostove.json` (3 features, 3D geometry).
+Everything below was observed on the live API, not read from docs. **Trust this over §3 where
+they disagree, and re-run the spike if ORS has a major release.**
+
+### ✅ Confirmed working
+- **`elevation: true` returns 3D geometry.** Coordinates come back as `[lng, lat, z]` with real
+  heights (551 m → 1556 m on this corridor). This is our elevation source — free, aligned to the
+  polyline, one request instead of two.
+- **`extra_info` returns real data for Bulgarian roads.** Not empty, not zeros:
+  - `waytype`: IDs **1** (state road), **2** (road), **3** (street), **5** (track) — ~76% road,
+    ~21% state road, a little street and track.
+  - `steepness`: IDs **−2 … 5**, 46 of 47 sections non-zero — climbs of 1–5 with a little
+    downhill, which matches the Vitosha ascent.
+- **Valhalla returns alternates** in the same shape ORS does.
+
+### ❌ Refuted — my original drafts were wrong here
+- **`avoid_features` must be nested under `options`.** Top-level returns
+  `2012 Unknown parameter`. Fixed in §3, §8, §10 and the Phase 1 prompt.
+- **`elevation: true` does NOT populate `summary.ascent` / `summary.descent`.** They're missing
+  from the response. Derive ascent/descent from the 3D polyline after a smoothing pass (SPEC §7).
+- **`alternative_routes` ≠ "twisty vs cruise".** 3 features, but only **2 distinct roads**:
+
+  | Pair | Fréchet | Within 50 m | City half | Mountain half |
+  |---|---|---|---|---|
+  | 0 vs 1 | 1.76 km | 62% | 24% | **100%** |
+  | 0 vs 2 | 1.74 km | 62% | 24% | **100%** |
+  | 1 vs 2 | **28 m** | 100% | 100% | 100% |
+
+  Different Sofia streets, then the **identical Belovodski pat** to the mountain. Feature 0 is
+  essentially Valhalla's primary (Fréchet 174 m). **Consequence: waypoint injection is the
+  PRIMARY differentiation strategy in Phase 2, not a fallback.** Valhalla's
+  `use_highways`/`use_trails` still shape the approach legs and remain worth using.
+- **`avoid_features` for driving-* is only `highways | tollways | ferries | fords`.** There is no
+  `unpaved`/`unpavedroads`. Filter unpaved client-side from the `surface` extra.
+
+### ⚠️ Still unknown — resolve empirically, don't guess
+1. **`round_trip` placement.** Docs say `options.round_trip`; older examples show it top-level.
+   Send both spellings once, see which returns 200, then hardcode it and note the answer here.
+2. **Response key `waytypes` vs `waytype`.** The docs example shows `"waytypes"` (plural) while the
+   request param is `waytype`. Read both defensively and assert the presence of one in a fixture test.
+3. **The `steepness` band boundaries.** Docs only say "Steepness IDs". Derive the table from data:
+   you have 3D coords *and* a steepness ID per section, so compute the actual gradient between
+   `coords[i]` and `coords[i+1]` for each section, bucket by ID, and infer the % bands. Encode the
+   result as a constant with a test that asserts the correlation. Never assume 0 means "flat".
+   (46/47 non-zero on a route that starts in flat central Sofia is a hint the bands are narrower
+   than you'd expect — which is exactly why this must be measured, not guessed.)
+4. **`waycategory` bitmask.** Assumed `& 1` = highway, `& 2` = tollway. Confirm against a route
+   you know uses a motorway. Needed for `motorwayShare` on CRUISE-profile candidates.
+
+### 📐 Product consequence of the spike
+On a corridor with **one road up the mountain**, no router can give you twisty-vs-cruise as two
+different roads — there is only one road. That's a property of the map, not a bug in the plan.
+
+So pick test corridors deliberately, and keep the product honest:
+- **Geometry/pace-note testing** (Phases 3–5): Sofia → Zlatnite Mostove is ideal. One unambiguous
+  mountain road, a big elevation gain, and a clean fixture to snapshot notes against.
+- **Twisty-vs-cruise demo** (Phase 2): use a corridor where you *know* two real roads exist —
+  e.g. Sofia → Rila Monastery (motorway via Dupnitsa vs the old road through Pernik–Radomir), or
+  Sofia → Borovets. Verify with the same spike before trusting it.
+- **Loop mode** is the honest answer for "give me a great drive with no destination": ORS
+  `round_trip` + `length` + `seed`, no A→B corridor needed at all.

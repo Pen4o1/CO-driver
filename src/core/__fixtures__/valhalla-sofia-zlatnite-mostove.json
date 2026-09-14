@@ -1,0 +1,788 @@
+{
+  "trip": {
+    "locations": [
+      {
+        "type": "break",
+        "lat": 42.6977,
+        "lon": 23.3219,
+        "original_index": 0
+      },
+      {
+        "type": "break",
+        "lat": 42.6187,
+        "lon": 23.2483,
+        "side_of_street": "right",
+        "original_index": 1
+      }
+    ],
+    "legs": [
+      {
+        "maneuvers": [
+          {
+            "type": 1,
+            "instruction": "Drive east on бул. Княз Александър Дондуков.",
+            "verbal_succinct_transition_instruction": "Drive east. Then Keep right to take пл. Атанас Буров.",
+            "verbal_pre_transition_instruction": "Drive east on бул. Княз Александър Дондуков. Then Keep right to take пл. Атанас Буров.",
+            "verbal_post_transition_instruction": "Continue for 100 meters.",
+            "street_names": [
+              "бул. Княз Александър Дондуков"
+            ],
+            "bearing_after": 102,
+            "time": 18.92,
+            "length": 0.115,
+            "cost": 23.169,
+            "begin_shape_index": 0,
+            "end_shape_index": 5,
+            "verbal_multi_cue": true,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 23,
+            "instruction": "Keep right to take пл. Атанас Буров.",
+            "verbal_transition_alert_instruction": "Keep right to take пл. Атанас Буров.",
+            "verbal_pre_transition_instruction": "Keep right to take пл. Атанас Буров.",
+            "verbal_post_transition_instruction": "Continue for 600 meters.",
+            "street_names": [
+              "бул. Цар Освободител"
+            ],
+            "bearing_before": 104,
+            "bearing_after": 107,
+            "time": 100.9,
+            "length": 0.56,
+            "cost": 149.81,
+            "begin_shape_index": 5,
+            "end_shape_index": 23,
+            "has_time_restrictions": true,
+            "sign": {},
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 10,
+            "instruction": "Turn right onto Георги С. Раковски.",
+            "verbal_transition_alert_instruction": "Turn right onto Георги С. Раковски.",
+            "verbal_succinct_transition_instruction": "Turn right.",
+            "verbal_pre_transition_instruction": "Turn right onto Георги С. Раковски.",
+            "verbal_post_transition_instruction": "Continue for 700 meters.",
+            "street_names": [
+              "Георги С. Раковски"
+            ],
+            "bearing_before": 118,
+            "bearing_after": 207,
+            "time": 128.862,
+            "length": 0.704,
+            "cost": 228.363,
+            "begin_shape_index": 23,
+            "end_shape_index": 60,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 15,
+            "instruction": "Turn left to stay on Георги С. Раковски.",
+            "verbal_transition_alert_instruction": "Turn left to stay on Георги С. Раковски.",
+            "verbal_succinct_transition_instruction": "Turn left.",
+            "verbal_pre_transition_instruction": "Turn left to stay on Георги С. Раковски.",
+            "verbal_post_transition_instruction": "Continue for 200 meters.",
+            "street_names": [
+              "Георги С. Раковски"
+            ],
+            "bearing_before": 233,
+            "bearing_after": 188,
+            "time": 41.413,
+            "length": 0.227,
+            "cost": 78.162,
+            "begin_shape_index": 60,
+            "end_shape_index": 68,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 10,
+            "instruction": "Turn right onto бул. Патриарх Евтимий/булевард Патриарх Евтимий.",
+            "verbal_transition_alert_instruction": "Turn right onto бул. Патриарх Евтимий.",
+            "verbal_succinct_transition_instruction": "Turn right.",
+            "verbal_pre_transition_instruction": "Turn right onto бул. Патриарх Евтимий, булевард Патриарх Евтимий.",
+            "verbal_post_transition_instruction": "Continue for 100 meters.",
+            "street_names": [
+              "бул. Патриарх Евтимий",
+              "булевард Патриарх Евтимий"
+            ],
+            "bearing_before": 188,
+            "bearing_after": 277,
+            "time": 20.346,
+            "length": 0.112,
+            "cost": 40.534,
+            "begin_shape_index": 68,
+            "end_shape_index": 73,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 15,
+            "instruction": "Turn left onto проф. Фритьоф Нансен.",
+            "verbal_transition_alert_instruction": "Turn left onto проф. Фритьоф Нансен.",
+            "verbal_succinct_transition_instruction": "Turn left.",
+            "verbal_pre_transition_instruction": "Turn left onto проф. Фритьоф Нансен.",
+            "verbal_post_transition_instruction": "Continue for 600 meters.",
+            "street_names": [
+              "проф. Фритьоф Нансен"
+            ],
+            "bearing_before": 277,
+            "bearing_after": 189,
+            "time": 117.053,
+            "length": 0.621,
+            "cost": 151.25,
+            "begin_shape_index": 73,
+            "end_shape_index": 89,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 10,
+            "instruction": "Turn right onto бул. България.",
+            "verbal_transition_alert_instruction": "Turn right onto бул. България.",
+            "verbal_succinct_transition_instruction": "Turn right.",
+            "verbal_pre_transition_instruction": "Turn right onto бул. България.",
+            "verbal_post_transition_instruction": "Continue for 7 kilometers.",
+            "street_names": [
+              "бул. България"
+            ],
+            "bearing_before": 184,
+            "bearing_after": 248,
+            "time": 1000.818,
+            "length": 6.566,
+            "cost": 1221.722,
+            "begin_shape_index": 89,
+            "end_shape_index": 224,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 26,
+            "instruction": "Enter the roundabout and take the 2nd exit onto Иваница Данчев.",
+            "verbal_transition_alert_instruction": "Enter the roundabout and take the 2nd exit onto Иваница Данчев.",
+            "verbal_succinct_transition_instruction": "Enter the roundabout and take the 2nd exit.",
+            "verbal_pre_transition_instruction": "Enter the roundabout and take the 2nd exit onto Иваница Данчев.",
+            "bearing_before": 305,
+            "bearing_after": 330,
+            "time": 8.647,
+            "length": 0.032,
+            "cost": 11.773,
+            "begin_shape_index": 224,
+            "end_shape_index": 234,
+            "roundabout_exit_count": 2,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 27,
+            "instruction": "Exit the roundabout onto Иваница Данчев.",
+            "verbal_succinct_transition_instruction": "Exit the roundabout.",
+            "verbal_pre_transition_instruction": "Exit the roundabout onto Иваница Данчев.",
+            "verbal_post_transition_instruction": "Continue for 1 kilometer.",
+            "street_names": [
+              "Иваница Данчев"
+            ],
+            "bearing_before": 211,
+            "bearing_after": 253,
+            "time": 158.203,
+            "length": 1.149,
+            "cost": 193.391,
+            "begin_shape_index": 234,
+            "end_shape_index": 277,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 15,
+            "instruction": "Turn left onto Акация.",
+            "verbal_transition_alert_instruction": "Turn left onto Акация.",
+            "verbal_succinct_transition_instruction": "Turn left. Then Turn right to stay on Акация.",
+            "verbal_pre_transition_instruction": "Turn left onto Акация. Then Turn right to stay on Акация.",
+            "verbal_post_transition_instruction": "Continue for 20 meters.",
+            "street_names": [
+              "Акация"
+            ],
+            "bearing_before": 297,
+            "bearing_after": 215,
+            "time": 8.424,
+            "length": 0.017,
+            "cost": 22.08,
+            "begin_shape_index": 277,
+            "end_shape_index": 278,
+            "verbal_multi_cue": true,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 10,
+            "instruction": "Turn right to stay on Акация.",
+            "verbal_transition_alert_instruction": "Turn right to stay on Акация.",
+            "verbal_succinct_transition_instruction": "Turn right.",
+            "verbal_pre_transition_instruction": "Turn right to stay on Акация.",
+            "verbal_post_transition_instruction": "Continue for 300 meters.",
+            "street_names": [
+              "Акация"
+            ],
+            "bearing_before": 215,
+            "bearing_after": 298,
+            "time": 95.416,
+            "length": 0.283,
+            "cost": 107.04,
+            "begin_shape_index": 278,
+            "end_shape_index": 294,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 9,
+            "instruction": "Bear right onto Стар Беловодски път.",
+            "verbal_transition_alert_instruction": "Bear right onto Стар Беловодски път.",
+            "verbal_succinct_transition_instruction": "Bear right.",
+            "verbal_pre_transition_instruction": "Bear right onto Стар Беловодски път.",
+            "verbal_post_transition_instruction": "Continue for 1.5 kilometers.",
+            "street_names": [
+              "Стар Беловодски път"
+            ],
+            "bearing_before": 243,
+            "bearing_after": 260,
+            "time": 249.029,
+            "length": 1.5,
+            "cost": 278.45,
+            "begin_shape_index": 294,
+            "end_shape_index": 363,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 9,
+            "instruction": "Bear right onto Беловодски път.",
+            "verbal_transition_alert_instruction": "Bear right onto Беловодски път.",
+            "verbal_succinct_transition_instruction": "Bear right.",
+            "verbal_pre_transition_instruction": "Bear right onto Беловодски път.",
+            "verbal_post_transition_instruction": "Continue for 8 kilometers.",
+            "street_names": [
+              "Беловодски път"
+            ],
+            "bearing_before": 213,
+            "bearing_after": 242,
+            "time": 875.036,
+            "length": 8.014,
+            "cost": 803.506,
+            "begin_shape_index": 363,
+            "end_shape_index": 648,
+            "rough": true,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 15,
+            "instruction": "Turn left.",
+            "verbal_transition_alert_instruction": "Turn left.",
+            "verbal_succinct_transition_instruction": "Turn left.",
+            "verbal_pre_transition_instruction": "Turn left.",
+            "verbal_post_transition_instruction": "Continue for 200 meters.",
+            "bearing_before": 255,
+            "bearing_after": 148,
+            "time": 33.481,
+            "length": 0.215,
+            "cost": 28.353,
+            "begin_shape_index": 648,
+            "end_shape_index": 659,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 15,
+            "instruction": "Turn left.",
+            "verbal_transition_alert_instruction": "Turn left.",
+            "verbal_succinct_transition_instruction": "Turn left.",
+            "verbal_pre_transition_instruction": "Turn left.",
+            "verbal_post_transition_instruction": "Continue for 800 meters.",
+            "bearing_before": 80,
+            "bearing_after": 17,
+            "time": 106.626,
+            "length": 0.842,
+            "cost": 94.567,
+            "begin_shape_index": 659,
+            "end_shape_index": 697,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 10,
+            "instruction": "Turn right.",
+            "verbal_transition_alert_instruction": "Turn right.",
+            "verbal_succinct_transition_instruction": "Turn right.",
+            "verbal_pre_transition_instruction": "Turn right.",
+            "verbal_post_transition_instruction": "Continue for 2 kilometers.",
+            "bearing_before": 332,
+            "bearing_after": 35,
+            "time": 279.337,
+            "length": 2.245,
+            "cost": 252.207,
+            "begin_shape_index": 697,
+            "end_shape_index": 765,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          },
+          {
+            "type": 5,
+            "instruction": "Your destination is on the right.",
+            "verbal_transition_alert_instruction": "Your destination will be on the right.",
+            "verbal_pre_transition_instruction": "Your destination is on the right.",
+            "bearing_before": 213,
+            "time": 0.0,
+            "length": 0.0,
+            "cost": 0.0,
+            "begin_shape_index": 765,
+            "end_shape_index": 765,
+            "travel_mode": "drive",
+            "travel_type": "motorcycle"
+          }
+        ],
+        "summary": {
+          "has_time_restrictions": true,
+          "has_toll": false,
+          "has_highway": false,
+          "has_ferry": false,
+          "min_lat": 42.60941,
+          "min_lon": 23.216371,
+          "max_lat": 42.697688,
+          "max_lon": 23.329333,
+          "time": 3242.518,
+          "length": 23.207,
+          "cost": 3684.383
+        },
+        "shape": "q|`mpAoqmnk@T}BXsD`Hwr@n@}F~AmO|CoUzCsSv@eFfAwEpVqz@`M}a@zCuJlA_EV}@|@yCx_@spApByGdTmt@jC_JlGqTrFeRTu@hAyDrBpAhBfAhm@|^n@d@l@d@z@|@hDjDb^v`@|ClDpVvXpA~A|@vAhRrZpBbDj@~@xA~BxBlDdBrCXd@lIbN|Sd]`@p@j@|@bOlV`QhYbA`BHN`@p@LXP\\|@hBNZpCxGfPba@fS`h@p@xAv@dAz@Jvl@hFnd@vE`AJnVfCjEd@pCXbD\\_Br`@_@pJkBtc@G|ACZfEh@lANlt@`Jfy@`KlFp@bi@zL|HvA`Cd@pKxAjI`AfeAbObJ|AnIjApLzAhQjBxLd@~H~_@tFrMrJz]xEnR|Mnh@bJpb@~FlZtBhMbCvOdEj^xDx`@hAbUn@zKvAz_@n@b^VlOBnMNbf@\\n~AjBb_BbFhr@pHtp@xLft@tN|n@nu@fxCnMlg@pDpQvD~RjAdIjB`MdCjRlBfRrPv`BdCxQpCvOpBlIvBbI~BrH~CdJhKbUtHlMxCbEdGhIjK`LlNnK~ObJrPzJlKjGn_@vR|aAvg@bL~FfCpArR|JzMbHhq@~]nKxFfStK|CbBpTjOpNzJ~LfKbHxFxaCb_ChPtO~h@rg@bx@lv@d`Af~@vb@`a@p_Ad~@nHrGzGhG~XbWpZpR~UpMjRhHhTvG`a@|Hn|@`Qtu@xMzHvApXbF|q@zLthAdUba@bIbf@pIt^xHfc@vNrC~@bWvIl^nOpN~GpN~I~IpG``@r[hQpOvKnJbWnZbW``@~AlCfIxOzf@|_AnSj]td@vv@x@|AjHlMza@bu@zOrZdJnWp@nBdHlVtD|NdKlj@pFt^pDda@rCrq@zAfdAp@vc@xAfbAVvf@@lBBh@z@vg@~@|i@AfOo@|PaA|J_AlFiE~RmAjE}Kt^uJx\\{ErRkAjEk@vBsA|Bg@Xc@`@k@hA[vAE~ALlAd@~Av@`Af@Zf@Nn@rEf@rCx@xIz@lz@NnPh@|g@?pEQ|Ee@tMoC|Y}Jxo@iAlHSvAShCAfCJhGDpCN`DX|Ej@|FRhBpFbj@vEfe@VdC~IlbAbFvj@xAfPtBjYrAlVhAbVn@jWRhMHlHLbIpApx@DlC^vUhA~w@a@|VsA~Rs@rEcBtKaCvItFjF}DnNe@hH?nG|@`JxAbL~H`[|CvQLnGe@pWcBhZBpEfBhBhF`AhBpAhC~Gr@vDd@pHdArJpXjcAdNdx@jBtFhHfU|BpJpArIbDlZlFps@p@xb@X|SQfLh@pVzDnNjBvE`CtDbErCbRvLvBlBbA|At@zAfBtEx@dC|EnQr@fBrBbDtCxC~InGhAtARXt@~Af@xATxC@pCs@hFkBrIsFdQ}@vCiBxFsA~GiAnG_@vJLlGn@vF`AnGxBrGtDbHvH|HrXvTrMvLnJ~MpInObP`^|J|SfExNdAfHnFnp@xCv^dBdRrCdO`D`KzFvOxCvL`BdIlBbGdCxDfEhEfHdGrMxd@h@jBBHlUny@fB|F~ErSr@~IK|JeBpGkPz_@mDbOkAtMy@vTC~Kr@vQlB~JlXrw@v@jNYbKwBhHsEtIu_@l\\qDnGcBzG{@xG`@vJrBlNtBfKV|MWhFg@xFu@xHYpGE|Fh@bH|A~EpDxGxFhFng@d`@xFrGhJtStFpQvFtNrDjFvWtWfFfHdDvGhHpSlBrKhA`LPnFWjPoErWmE|MkT~^c_@lg@_E`IgAvGo@xGR|TnBbVfFdZzEvMbHdJtHtDtEh@hBRxFKxZkEfC_@vMwCdv@iXhImBnd@cGnJoDhHuH`BiDrBiIv@mL{@ck@NcUt@{NvCgWxF_ZzJuk@bKeVvSwRj\\qOdbA}\\~_AkJhPkBdHgEnJaLxd@ee@pKcVpI{UpF_InGsGvHwDvPyLtUaYpIcMzBgLgB_K{DoFiF{AcEd@qG`EoRn[qSj]aHrKgJnHyRbLaYfOcJ`B}KgC{PuLuScRyTyHql@{C}Ac@qAu@oAcAeAsAy@_Bg@kBUyBGaCBiBLeB\\aBd@wAh@gAt@gAbAy@LE`Aa@bBg@`BQpELv[hChL~@pHFrJSjMgD|SiJpKgJhHkLtLgx@jLia@xPu[pOwPp`@_UzVsRpLkPdR_\\lCsDhF_FlIoF`SaJdMoChGq@nHAdZdCvV`FjVjBpPg@vL{BhLgB`KcFdB{@pI_EvAq@bY{NjLaG`DaBhYyN`HsDhNkHfJaFdGoBpGqAfIw@pFQdJ\\pHbAzFvA~JpFtD|C~DnDtWj\\vEfEhExCjO~GfFtAvEbAbGd@tHJvHLjGOfPu@`Nw@lIM`Pp@vIhAbEjAbFnDz@pBPnAPpAb@`D`@xGa@`ImBpIyClI_HnPuDpFyHrPoAhGaAbKJnJr@lKbf@vvBjErTrEzIrHnF`HbB~Hg@jQmFxTyG|TyGpi@ePrEmAnLSh^pDrJ^lJvBnH~IdK`UxEfLpKrF~L|@|ZiBhR{G~UcTjb@iq@tHmR~DaTp@}TKe`@b@uNhKwl@nAeUAmTeEsTiL}`@}AyK[mJhAkHrB{FfkBwzBlDyCtXcL~CcD|FaKxByIxAgGrC_GxHaLhp@i|@rFcLzc@qkAbIgOvJkKtMeFjI]lHe@|DV~DVvEj@~Bv@lHpClE`EbC|FlBrP~EyDtCgDlByEm@uIyAqLmCiK_@aKlEyYTiQq@}U_AwNwHaCiBBkDFiGxDsMxLgMrE}K`BkRzEge@nLqJbCaWtEoBpAib@vX_FfCs\\rFuLnBsBbBgBfDiA~E}@`S_AvWqBfVqAlGwChBwCg@sBwCaAwHD{SKsQgBoJsF_JwFsDyDN}DfCsFjNeItSwC`DuBh@oBy@qBcDqDaMyCaM}DgJqG}G}NwKwPoLwF_FsE{Gqe@_qAqGkPaGsPkQme@eCeJu@}JC}JvAuQJoSyAeOqGwJaJkHsQeH}VsN}SqIqQuFsE{AcEuBaHgIok@oaAm`@op@c_@uY{GeIeBgHGaI`BkHjEyEtGcOfAmIkAqHmL{Pkk@_r@cS}VoGsK_CuFyAgNh@yJ~AeKnFeL|m@_r@nNgMjHqJxEsQxH}p@zDgd@bG_k@zDoKrEiE~GeAtG~BbFzF`Ytw@tSdUzMnNtIlLdRlq@dC|HxCx@"
+      }
+    ],
+    "summary": {
+      "has_time_restrictions": true,
+      "has_toll": false,
+      "has_highway": false,
+      "has_ferry": false,
+      "min_lat": 42.60941,
+      "min_lon": 23.216371,
+      "max_lat": 42.697688,
+      "max_lon": 23.329333,
+      "time": 3242.518,
+      "length": 23.207,
+      "cost": 3684.383
+    },
+    "status_message": "Found route between points",
+    "status": 0,
+    "units": "kilometers",
+    "language": "en-US"
+  },
+  "alternates": [
+    {
+      "trip": {
+        "locations": [
+          {
+            "type": "break",
+            "lat": 42.6977,
+            "lon": 23.3219,
+            "original_index": 0
+          },
+          {
+            "type": "break",
+            "lat": 42.6187,
+            "lon": 23.2483,
+            "side_of_street": "right",
+            "original_index": 1
+          }
+        ],
+        "legs": [
+          {
+            "maneuvers": [
+              {
+                "type": 1,
+                "instruction": "Drive west on бул. Княз Александър Дондуков.",
+                "verbal_succinct_transition_instruction": "Drive west.",
+                "verbal_pre_transition_instruction": "Drive west on бул. Княз Александър Дондуков.",
+                "verbal_post_transition_instruction": "Continue for 1 kilometer.",
+                "street_names": [
+                  "бул. Княз Александър Дондуков"
+                ],
+                "bearing_after": 283,
+                "time": 164.065,
+                "length": 1.001,
+                "cost": 289.738,
+                "begin_shape_index": 0,
+                "end_shape_index": 31,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left onto Опълченска.",
+                "verbal_transition_alert_instruction": "Turn left onto Опълченска.",
+                "verbal_succinct_transition_instruction": "Turn left.",
+                "verbal_pre_transition_instruction": "Turn left onto Опълченска.",
+                "verbal_post_transition_instruction": "Continue for 900 meters.",
+                "street_names": [
+                  "Опълченска"
+                ],
+                "bearing_before": 283,
+                "bearing_after": 192,
+                "time": 149.137,
+                "length": 0.876,
+                "cost": 265.848,
+                "begin_shape_index": 31,
+                "end_shape_index": 70,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 26,
+                "instruction": "Enter the roundabout and take the 2nd exit toward Перник/Кулата.",
+                "verbal_transition_alert_instruction": "Enter the roundabout and take the 2nd exit toward Перник.",
+                "verbal_succinct_transition_instruction": "Enter the roundabout and take the 2nd exit toward Перник, Кулата.",
+                "verbal_pre_transition_instruction": "Enter the roundabout and take the 2nd exit toward Перник, Кулата.",
+                "bearing_before": 163,
+                "bearing_after": 213,
+                "time": 6.471,
+                "length": 0.031,
+                "cost": 16.094,
+                "begin_shape_index": 70,
+                "end_shape_index": 80,
+                "roundabout_exit_count": 2,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 27,
+                "instruction": "Exit the roundabout toward Перник/Кулата.",
+                "verbal_succinct_transition_instruction": "Exit the roundabout toward Перник, Кулата.",
+                "verbal_pre_transition_instruction": "Exit the roundabout toward Перник, Кулата.",
+                "verbal_post_transition_instruction": "Continue for 5 kilometers.",
+                "street_names": [
+                  "бул. Ген. Тотлебен"
+                ],
+                "bearing_before": 177,
+                "bearing_after": 207,
+                "time": 856.405,
+                "length": 5.194,
+                "cost": 1142.985,
+                "begin_shape_index": 80,
+                "end_shape_index": 188,
+                "sign": {},
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 24,
+                "instruction": "Keep left to take бул. Цар Борис III/1/6/E 871.",
+                "verbal_transition_alert_instruction": "Keep left to take бул. Цар Борис III.",
+                "verbal_pre_transition_instruction": "Keep left to take бул. Цар Борис III, 1.",
+                "verbal_post_transition_instruction": "Continue for 1 kilometer.",
+                "street_names": [
+                  "бул. Цар Борис III",
+                  "1",
+                  "6",
+                  "E 871"
+                ],
+                "bearing_before": 241,
+                "bearing_after": 221,
+                "time": 142.338,
+                "length": 1.022,
+                "cost": 156.796,
+                "begin_shape_index": 188,
+                "end_shape_index": 202,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left onto Райска градина.",
+                "verbal_transition_alert_instruction": "Turn left onto Райска градина.",
+                "verbal_succinct_transition_instruction": "Turn left.",
+                "verbal_pre_transition_instruction": "Turn left onto Райска градина.",
+                "verbal_post_transition_instruction": "Continue for 200 meters.",
+                "street_names": [
+                  "Райска градина"
+                ],
+                "bearing_before": 246,
+                "bearing_after": 153,
+                "time": 52.342,
+                "length": 0.193,
+                "cost": 74.266,
+                "begin_shape_index": 202,
+                "end_shape_index": 217,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 10,
+                "instruction": "Turn right onto Петко Войвода.",
+                "verbal_transition_alert_instruction": "Turn right onto Петко Войвода.",
+                "verbal_succinct_transition_instruction": "Turn right.",
+                "verbal_pre_transition_instruction": "Turn right onto Петко Войвода.",
+                "verbal_post_transition_instruction": "Continue for 400 meters.",
+                "street_names": [
+                  "Петко Войвода"
+                ],
+                "bearing_before": 101,
+                "bearing_after": 194,
+                "time": 92.611,
+                "length": 0.374,
+                "cost": 121.046,
+                "begin_shape_index": 217,
+                "end_shape_index": 238,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 10,
+                "instruction": "Turn right to stay on Петко Войвода.",
+                "verbal_transition_alert_instruction": "Turn right to stay on Петко Войвода.",
+                "verbal_succinct_transition_instruction": "Turn right.",
+                "verbal_pre_transition_instruction": "Turn right to stay on Петко Войвода.",
+                "verbal_post_transition_instruction": "Continue for 300 meters.",
+                "street_names": [
+                  "Петко Войвода"
+                ],
+                "bearing_before": 123,
+                "bearing_after": 178,
+                "time": 61.223,
+                "length": 0.254,
+                "cost": 77.208,
+                "begin_shape_index": 238,
+                "end_shape_index": 243,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left onto Панорамен път.",
+                "verbal_transition_alert_instruction": "Turn left onto Панорамен път.",
+                "verbal_succinct_transition_instruction": "Turn left.",
+                "verbal_pre_transition_instruction": "Turn left onto Панорамен път.",
+                "verbal_post_transition_instruction": "Continue for 1 kilometer.",
+                "street_names": [
+                  "Панорамен път"
+                ],
+                "bearing_before": 195,
+                "bearing_after": 79,
+                "time": 156.209,
+                "length": 1.199,
+                "cost": 195.239,
+                "begin_shape_index": 243,
+                "end_shape_index": 295,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 10,
+                "instruction": "Turn right onto Беловодски път.",
+                "verbal_transition_alert_instruction": "Turn right onto Беловодски път.",
+                "verbal_succinct_transition_instruction": "Turn right.",
+                "verbal_pre_transition_instruction": "Turn right onto Беловодски път.",
+                "verbal_post_transition_instruction": "Continue for 800 meters.",
+                "street_names": [
+                  "Беловодски път"
+                ],
+                "bearing_before": 157,
+                "bearing_after": 256,
+                "time": 113.195,
+                "length": 0.762,
+                "cost": 130.618,
+                "begin_shape_index": 295,
+                "end_shape_index": 319,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left onto Акация.",
+                "verbal_transition_alert_instruction": "Turn left onto Акация.",
+                "verbal_succinct_transition_instruction": "Turn left. Then Turn right to stay on Акация.",
+                "verbal_pre_transition_instruction": "Turn left onto Акация. Then Turn right to stay on Акация.",
+                "verbal_post_transition_instruction": "Continue for 20 meters.",
+                "street_names": [
+                  "Акация"
+                ],
+                "bearing_before": 297,
+                "bearing_after": 215,
+                "time": 8.424,
+                "length": 0.017,
+                "cost": 22.08,
+                "begin_shape_index": 319,
+                "end_shape_index": 320,
+                "verbal_multi_cue": true,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 10,
+                "instruction": "Turn right to stay on Акация.",
+                "verbal_transition_alert_instruction": "Turn right to stay on Акация.",
+                "verbal_succinct_transition_instruction": "Turn right.",
+                "verbal_pre_transition_instruction": "Turn right to stay on Акация.",
+                "verbal_post_transition_instruction": "Continue for 300 meters.",
+                "street_names": [
+                  "Акация"
+                ],
+                "bearing_before": 215,
+                "bearing_after": 298,
+                "time": 95.416,
+                "length": 0.283,
+                "cost": 107.04,
+                "begin_shape_index": 320,
+                "end_shape_index": 336,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 9,
+                "instruction": "Bear right onto Стар Беловодски път.",
+                "verbal_transition_alert_instruction": "Bear right onto Стар Беловодски път.",
+                "verbal_succinct_transition_instruction": "Bear right.",
+                "verbal_pre_transition_instruction": "Bear right onto Стар Беловодски път.",
+                "verbal_post_transition_instruction": "Continue for 1.5 kilometers.",
+                "street_names": [
+                  "Стар Беловодски път"
+                ],
+                "bearing_before": 243,
+                "bearing_after": 260,
+                "time": 249.029,
+                "length": 1.5,
+                "cost": 278.45,
+                "begin_shape_index": 336,
+                "end_shape_index": 405,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 9,
+                "instruction": "Bear right onto Беловодски път.",
+                "verbal_transition_alert_instruction": "Bear right onto Беловодски път.",
+                "verbal_succinct_transition_instruction": "Bear right.",
+                "verbal_pre_transition_instruction": "Bear right onto Беловодски път.",
+                "verbal_post_transition_instruction": "Continue for 8 kilometers.",
+                "street_names": [
+                  "Беловодски път"
+                ],
+                "bearing_before": 213,
+                "bearing_after": 242,
+                "time": 875.036,
+                "length": 8.014,
+                "cost": 803.506,
+                "begin_shape_index": 405,
+                "end_shape_index": 690,
+                "rough": true,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left.",
+                "verbal_transition_alert_instruction": "Turn left.",
+                "verbal_succinct_transition_instruction": "Turn left.",
+                "verbal_pre_transition_instruction": "Turn left.",
+                "verbal_post_transition_instruction": "Continue for 200 meters.",
+                "bearing_before": 255,
+                "bearing_after": 148,
+                "time": 33.481,
+                "length": 0.215,
+                "cost": 28.353,
+                "begin_shape_index": 690,
+                "end_shape_index": 701,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 15,
+                "instruction": "Turn left.",
+                "verbal_transition_alert_instruction": "Turn left.",
+                "verbal_succinct_transition_instruction": "Turn left.",
+                "verbal_pre_transition_instruction": "Turn left.",
+                "verbal_post_transition_instruction": "Continue for 800 meters.",
+                "bearing_before": 80,
+                "bearing_after": 17,
+                "time": 106.626,
+                "length": 0.842,
+                "cost": 94.567,
+                "begin_shape_index": 701,
+                "end_shape_index": 739,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 10,
+                "instruction": "Turn right.",
+                "verbal_transition_alert_instruction": "Turn right.",
+                "verbal_succinct_transition_instruction": "Turn right.",
+                "verbal_pre_transition_instruction": "Turn right.",
+                "verbal_post_transition_instruction": "Continue for 2 kilometers.",
+                "bearing_before": 332,
+                "bearing_after": 35,
+                "time": 279.337,
+                "length": 2.245,
+                "cost": 252.207,
+                "begin_shape_index": 739,
+                "end_shape_index": 807,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              },
+              {
+                "type": 5,
+                "instruction": "Your destination is on the right.",
+                "verbal_transition_alert_instruction": "Your destination will be on the right.",
+                "verbal_pre_transition_instruction": "Your destination is on the right.",
+                "bearing_before": 213,
+                "time": 0.0,
+                "length": 0.0,
+                "cost": 0.0,
+                "begin_shape_index": 807,
+                "end_shape_index": 807,
+                "travel_mode": "drive",
+                "travel_type": "motorcycle"
+              }
+            ],
+            "summary": {
+              "level_changes": [
+                [
+                  9,
+                  0.0
+                ]
+              ],
+              "has_time_restrictions": false,
+              "has_toll": false,
+              "has_highway": false,
+              "has_ferry": false,
+              "min_lat": 42.60941,
+              "min_lon": 23.216371,
+              "max_lat": 42.699971,
+              "max_lon": 23.321896,
+              "time": 3441.353,
+              "length": 24.026,
+              "cost": 4056.046
+            },
+            "shape": "q|`mpAoqmnk@?@U|Ba@bBK`@Mb@a@hBo@lEyDdY}AjKqAdI{AxJoA|JwKjdAsKvdAoKz~@cNjpAShB[tCIz@M`A]~C[tCuIrw@iInu@uIbx@wIlx@yIhw@yEzd@CXeA~Km@nGbEt@jv@vNzOpChARpCd@lARXFZDfARzDn@zo@~Ldp@jMl_@|Hz@V~ErA~Bp@v[jGlHvAtKfA`KVvLa@hJmAbJyBvAi@tG_C|DgBxGcEnJ}GnK{HnEeDxL}I`KmGvBuAjW}MhBcA|DsBtB}@v@[fB[d@z@h@r@j@n@n@f@r@`@t@Xt@Pv@Jx@Bp@CtA|@~A|@pAx@`BhAxAjAvA~A`Ste@v}@vxBbV~k@n@bB~BtGzCrI^z@lKtVvt@xdBtXjq@xM|[~AzDlBvEnMh[~LfZ|HpR`JhUjJxTjJzThAnCl@tA`C|FlAtCxHxQbA`CbB~Df@hAjShe@f|@xuBXt@vAfDtB~EXn@|Trh@`qAzzCjO`^nBrEhC`GXp@rLhXn~AlqDLXTd@f@jAN\\|mChaGfMpWn@pA~BfFhDpHdBfD~@zBvNh[hwAr{CfAxBbAnBp@xArAlCpfAd}BzCzGfGbMjA`CrJzRteEj|IlGrMjAjCf@jAfC`GLTl@rATf@`@z@@DlCtFbAtBvMvXnjDvmHrSnc@nCzFJVrIrQlAhCBD\\r@`@|@tAtChDlHP\\nOb\\`kAncClCbGfCdHvp@`fCv@fLxG|Vz@zCvAvFvAbFtBtHnEtPlDrMfD|KzFlHj`BzaG`IvY`Lpa@j@tBXbALf@lGjU~|@jcDla@nzAxMvg@b@fBhAhEvG|Yb@S|AeAVM~C_BRKjGkE`A_A`A}@b@c@pBsGpC}}@j@oGL}ARaC~A}S~A^bLjClAX~LrCho@`OdAVbOjDfFfAf@Jd@Aj@Gx@KnRrBtEh@xOl@zSxAnFp@jDAzCgAtAoCzBoGnm@qAp[`CbY|@da@dGzDnAS}GsAgJQ{If@uKxB}O~E_]|@gDvDiOlOyl@dEyPpJe`@|DuInEcD|Je@fDYnDmAlD{BhCwD|CsQDmCj@qMCiJa@mG}CiRwGq^UmC@aDPiC`@aCpCoKpAsEdTco@lJsYrHuTxFaNdl@ir@zCcHrBoJPwB^iG~@}KbBeLtG{VvJyZpE_MrIwOnSk]lCeDfCaB`TaIx@]vCgBj@|FRhBpFbj@vEfe@VdC~IlbAbFvj@xAfPtBjYrAlVhAbVn@jWRhMHlHLbIpApx@DlC^vUhA~w@a@|VsA~Rs@rEcBtKaCvItFjF}DnNe@hH?nG|@`JxAbL~H`[|CvQLnGe@pWcBhZBpEfBhBhF`AhBpAhC~Gr@vDd@pHdArJpXjcAdNdx@jBtFhHfU|BpJpArIbDlZlFps@p@xb@X|SQfLh@pVzDnNjBvE`CtDbErCbRvLvBlBbA|At@zAfBtEx@dC|EnQr@fBrBbDtCxC~InGhAtARXt@~Af@xATxC@pCs@hFkBrIsFdQ}@vCiBxFsA~GiAnG_@vJLlGn@vF`AnGxBrGtDbHvH|HrXvTrMvLnJ~MpInObP`^|J|SfExNdAfHnFnp@xCv^dBdRrCdO`D`KzFvOxCvL`BdIlBbGdCxDfEhEfHdGrMxd@h@jBBHlUny@fB|F~ErSr@~IK|JeBpGkPz_@mDbOkAtMy@vTC~Kr@vQlB~JlXrw@v@jNYbKwBhHsEtIu_@l\\qDnGcBzG{@xG`@vJrBlNtBfKV|MWhFg@xFu@xHYpGE|Fh@bH|A~EpDxGxFhFng@d`@xFrGhJtStFpQvFtNrDjFvWtWfFfHdDvGhHpSlBrKhA`LPnFWjPoErWmE|MkT~^c_@lg@_E`IgAvGo@xGR|TnBbVfFdZzEvMbHdJtHtDtEh@hBRxFKxZkEfC_@vMwCdv@iXhImBnd@cGnJoDhHuH`BiDrBiIv@mL{@ck@NcUt@{NvCgWxF_ZzJuk@bKeVvSwRj\\qOdbA}\\~_AkJhPkBdHgEnJaLxd@ee@pKcVpI{UpF_InGsGvHwDvPyLtUaYpIcMzBgLgB_K{DoFiF{AcEd@qG`EoRn[qSj]aHrKgJnHyRbLaYfOcJ`B}KgC{PuLuScRyTyHql@{C}Ac@qAu@oAcAeAsAy@_Bg@kBUyBGaCBiBLeB\\aBd@wAh@gAt@gAbAy@LE`Aa@bBg@`BQpELv[hChL~@pHFrJSjMgD|SiJpKgJhHkLtLgx@jLia@xPu[pOwPp`@_UzVsRpLkPdR_\\lCsDhF_FlIoF`SaJdMoChGq@nHAdZdCvV`FjVjBpPg@vL{BhLgB`KcFdB{@pI_EvAq@bY{NjLaG`DaBhYyN`HsDhNkHfJaFdGoBpGqAfIw@pFQdJ\\pHbAzFvA~JpFtD|C~DnDtWj\\vEfEhExCjO~GfFtAvEbAbGd@tHJvHLjGOfPu@`Nw@lIM`Pp@vIhAbEjAbFnDz@pBPnAPpAb@`D`@xGa@`ImBpIyClI_HnPuDpFyHrPoAhGaAbKJnJr@lKbf@vvBjErTrEzIrHnF`HbB~Hg@jQmFxTyG|TyGpi@ePrEmAnLSh^pDrJ^lJvBnH~IdK`UxEfLpKrF~L|@|ZiBhR{G~UcTjb@iq@tHmR~DaTp@}TKe`@b@uNhKwl@nAeUAmTeEsTiL}`@}AyK[mJhAkHrB{FfkBwzBlDyCtXcL~CcD|FaKxByIxAgGrC_GxHaLhp@i|@rFcLzc@qkAbIgOvJkKtMeFjI]lHe@|DV~DVvEj@~Bv@lHpClE`EbC|FlBrP~EyDtCgDlByEm@uIyAqLmCiK_@aKlEyYTiQq@}U_AwNwHaCiBBkDFiGxDsMxLgMrE}K`BkRzEge@nLqJbCaWtEoBpAib@vX_FfCs\\rFuLnBsBbBgBfDiA~E}@`S_AvWqBfVqAlGwChBwCg@sBwCaAwHD{SKsQgBoJsF_JwFsDyDN}DfCsFjNeItSwC`DuBh@oBy@qBcDqDaMyCaM}DgJqG}G}NwKwPoLwF_FsE{Gqe@_qAqGkPaGsPkQme@eCeJu@}JC}JvAuQJoSyAeOqGwJaJkHsQeH}VsN}SqIqQuFsE{AcEuBaHgIok@oaAm`@op@c_@uY{GeIeBgHGaI`BkHjEyEtGcOfAmIkAqHmL{Pkk@_r@cS}VoGsK_CuFyAgNh@yJ~AeKnFeL|m@_r@nNgMjHqJxEsQxH}p@zDgd@bG_k@zDoKrEiE~GeAtG~BbFzF`Ytw@tSdUzMnNtIlLdRlq@dC|HxCx@"
+          }
+        ],
+        "summary": {
+          "has_time_restrictions": false,
+          "has_toll": false,
+          "has_highway": false,
+          "has_ferry": false,
+          "min_lat": 42.60941,
+          "min_lon": 23.216371,
+          "max_lat": 42.699971,
+          "max_lon": 23.321896,
+          "time": 3441.353,
+          "length": 24.026,
+          "cost": 4056.046
+        },
+        "status_message": "Found route between points",
+        "status": 0,
+        "units": "kilometers",
+        "language": "en-US"
+      }
+    }
+  ]
+}

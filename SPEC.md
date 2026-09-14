@@ -79,11 +79,15 @@ export type LatLng = { lat: number; lng: number };
 export type TurnGrade = 1 | 2 | 3 | 4 | 5 | 6;   // 1 = hairpin, 6 = flat out
 
 export type RouteGeometry = {
-  coords: LatLng[];                 // GeoJSON-order-agnostic; keep {lat,lng}
+  coords: LatLng[];                 // ALWAYS 2D {lat,lng}. Keeps geometry math unchanged.
   cumulative: Float64Array;         // metres from start, same length as coords
   lengthM: number;
   bbox: [number, number, number, number];
-};
+  elevationM: Float64Array | null;  // DEM height per coord, SAME INDEX as coords.
+                                    // ORS `elevation: true` returns [lng,lat,z] — split z out
+                                    // here so `cumulative[i]` indexes elevation too. Null if absent.
+  };
+// RULE: never store 3D coords. z lives only in elevationM, aligned by index.
 
 export type RouteStyle = 'twist' | 'balanced' | 'cruise' | 'gentle' | 'custom';
 
@@ -136,7 +140,7 @@ export type RouteCandidate = {
   fastestDurationS: number;         // for the "+12 min" comparison
   profileId: RouteStyle;
   waypointsUsed: LatLng[];
-  ascentM: number | null;           // from ORS summary.ascent, or Valhalla /height
+  ascentM: number | null;           // DERIVED from elevationM, not from summary.ascent
   descentM: number | null;
 };
 
@@ -293,20 +297,39 @@ Metrics (per candidate):
 curvatureDegPerKm   = Σ |ΔΘ| over route (degrees) / (lengthM / 1000)
 hairpinCount        = #{ corners with grade == 1 }
 turnDensityPerKm    = #{ corners with grade <= 4 } / (lengthM / 1000)
-motorwayShare       = metres on motorway-class roads / lengthM
-lowSpeedRoadShare   = 1 - (metres on wayType 1|2 (state/regional) / lengthM)
-elevationVariationM = ascentM, falling back to p95-p5 of the DEM profile (null if neither)
+motorwayShare       = metres where (waycategory & 1) / lengthM      // ORS bitmask: 1 = highway
+lowSpeedRoadShare   = metres where wayType ∈ {3 street, 5 track} / lengthM
+elevationVariationM = ascentM (derived from elevationM), null if no elevation data
+
+// ORS extras are INDEX TRIPLES, not per-step values:
+//   extras.waytype.values = [[startIdx, endIdx, value], ...]  -> indexes into geometry coords
+//   Combine with `cumulative` to get metres per section.
+//   extras.<name>.summary = [{value, distance, amount}] is a shortcut for simple share metrics.
+// RESPONSE KEY GOTCHA: the request param is "waytype" but the response key has been seen as
+//   "waytypes" (plural). Read both, prefer whichever exists. Assert it in a fixture test.
+
+// ASCENT/DESCENT DERIVATION (summary.ascent is NOT populated by elevation: true — verified):
+//   1. Take elevationM, smooth with a moving average over ~100 m of arc length
+//      (raw DEM jitter makes a naive sum overestimate ascent by 3-5x).
+//   2. ascentM  = Σ max(0, h[i+1] - h[i]);  descentM = Σ max(0, h[i] - h[i+1])
+//   3. Store both raw and smoothed values in the breakdown during development so the
+//      smoothing window can be calibrated against reality. Ship the smoothed one.
 ```
 
 **Source of road attributes (provider-neutral).** Do not assume a `maxspeed` annotation exists —
 OSM exposes it inconsistently. In preference order:
-1. ORS `extra_info: ["waytype","surface","steepness"]` → `properties.extras.<name>.values`
-   (per-segment, aligned to `segments[].steps`).
+1. ORS `extra_info: ["waytype","waycategory","steepness","surface"]` → `properties.extras`
+   index triples (see the format note above). **Verified working on Bulgarian roads** — real
+   non-zero values, not empty. Use `waycategory & 1` for motorways; `waytype` 3/5 for low-speed.
 2. Valhalla `/trace_attributes` with `filters.attributes: ["road_class","surface","edge.percent_grade"]`.
 3. Overpass API (free, no key) for the route corridor — `highway=*`, `maxspeed`, `surface`.
    Cache aggressively; never call Overpass per candidate.
 4. `null` — and redistribute the weight. **A metric that cannot be sourced must be `null`,
    not zero**, or every candidate looks like it scores badly.
+
+**"Unpaved" is not filterable server-side.** ORS `avoid_features` for driving-* supports only
+`highways`, `tollways`, `ferries`, `fords`. Detect unpaved client-side from the `surface` extra
+and apply a soft penalty, or exclude the candidate.
 
 
 Normalise each metric min–max **across the candidate set** (if a metric is constant across the set, its normalised value is 0.5). Then:
@@ -321,6 +344,18 @@ score01 =   w.curviness        * n(curvatureDegPerKm)
           - w.detourPenalty    * n(durationS / fastestDurationS - 1)
 score = clamp(score01, 0, 1) * 100
 ```
+
+**Dedupe (normative — tightened after the live Sofia spike).** Two candidates are the same road if EITHER:
+- `frechetDistance(A,B) < 0.15 * min(lengthA, lengthB)`, OR
+- **overlap share > 0.85**: more than 85% of B's vertices lie within 50 m of some vertex of A
+  (spatial hash on ~0.001° cells keeps this O(n)).
+
+Keep the faster one. *Why both rules:* ORS `alternative_routes` returned 3 "alternatives" on the
+Sofia→Zlatnite Mostove corridor whose overall paths differed by 1.7 km, but a pair of them were
+only **28 m** apart under Fréchet — the same mountain road reached through different city streets.
+Fréchet alone catches duplicates; the overlap rule catches the partial-share case (62% city /
+100% mountain shared) that Fréchet misses at longer lengths. Without both, you will show the user
+three route cards for one road.
 
 Profile weights:
 
