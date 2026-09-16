@@ -1,8 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { LeadTimePreset } from '@/core/types';
+import type { LeadTimePreset, NoteFilterOptions } from '@/core/types';
 import { NotesFilterPanel } from '@/features/pacenotes/NotesFilterPanel';
-import { filterFromPersisted } from '@/core/settings';
 import { useSettings } from '@/state/settings';
 import { Chip } from '@/ui/Chip';
 import { colors, space, type } from '@/ui/theme';
@@ -16,7 +16,40 @@ const PRESETS: { id: LeadTimePreset; label: string }[] = [
 export function CallSettingsPanel() {
   const leadPreset = useSettings((s) => s.leadPreset);
   const patch = useSettings((s) => s.patch);
-  const filter = useSettings((s) => filterFromPersisted(s));
+  const minGradeToCall = useSettings((s) => s.minGradeToCall);
+  const includeJunctions = useSettings((s) => s.includeJunctions);
+  const includeCrests = useSettings((s) => s.includeCrests);
+  const includeStraights = useSettings((s) => s.includeStraights);
+  const includeCareNotes = useSettings((s) => s.includeCareNotes);
+  const includeFinish = useSettings((s) => s.includeFinish);
+  const verbosity = useSettings((s) => s.verbosity);
+  const chainRadius = useSettings((s) => s.chainRadius);
+  const confirmCalls = useSettings((s) => s.confirmCalls);
+
+  const filter: NoteFilterOptions = useMemo(
+    () => ({
+      minGradeToCall,
+      includeJunctions,
+      includeCrests,
+      includeStraights,
+      includeCareNotes,
+      includeFinish,
+      verbosity,
+      chainRadius,
+      confirmCalls,
+    }),
+    [
+      minGradeToCall,
+      includeJunctions,
+      includeCrests,
+      includeStraights,
+      includeCareNotes,
+      includeFinish,
+      verbosity,
+      chainRadius,
+      confirmCalls,
+    ],
+  );
 
   return (
     <View style={styles.block}>

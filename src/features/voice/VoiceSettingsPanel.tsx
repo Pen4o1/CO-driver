@@ -40,14 +40,16 @@ export function VoiceSettingsPanel() {
       if (cancelled) return;
       setAvailable(ok);
       setVoices(listed);
-      if (listed.length > 0 && !listed.some((v) => v.id === voiceId)) {
-        patch({ voiceId: listed[0].id });
+      const stored = useSettings.getState().voiceId;
+      const first = listed[0];
+      if (first && !listed.some((v) => v.id === stored)) {
+        patch({ voiceId: first.id });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [ttsProviderId, voiceId, patch]);
+  }, [ttsProviderId, patch]);
 
   const pick = (id: TtsProviderId) => {
     patch({ ttsProviderId: id });
