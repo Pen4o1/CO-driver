@@ -3,14 +3,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { SAFETY_DISCLAIMER_BG_EU } from '@/core/safety';
 import { currentFix, gpsBand } from '@/features/coach';
 import { loadDriveBundle } from '@/features/coach/loadDriveBundle';
 import { acceptDisclaimer, disclaimerAccepted } from '@/features/storage';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
-
-const LEGAL =
-  'This is a driving aid, not a substitute for attention. The driver must remain in control of the vehicle at all times. No interaction while driving (Bulgaria / EU).';
 
 function bandColor(band: 'good' | 'ok' | 'poor'): string {
   if (band === 'good') return colors.grade5;
@@ -102,7 +100,7 @@ export default function RecceScreen() {
           }}
           style={styles.legal}
         >
-          <Text style={styles.legalText}>{LEGAL}</Text>
+          <Text style={styles.legalText}>{SAFETY_DISCLAIMER_BG_EU}</Text>
           <Text style={styles.ack}>Tap to acknowledge (once per install)</Text>
         </Pressable>
       ) : (

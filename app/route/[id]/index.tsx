@@ -1,24 +1,45 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { RouteCandidate } from '@/core/types';
+import { canMutateLibrary } from '@/core/safety';
+import { formatDistanceKm } from '@/core/units';
+import { RouteMetaEditor } from '@/features/library/RouteMetaEditor';
+import { OfflinePackCard } from '@/features/maps/OfflinePackCard';
 import { RouteMap } from '@/features/maps/RouteMap';
-import { getRoute } from '@/features/storage';
+import {
+  deleteRoute,
+  duplicateRoute,
+  getRoute,
+  renameRoute,
+  setRouteNote,
+} from '@/features/storage';
+import { deleteRoutePack } from '@/features/maps/offlinePacks';
+import { useSession } from '@/state/session';
+import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
 
 export default function RouteDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const units = useSettings((s) => s.unitSystem);
+  const locked = !canMutateLibrary(useSession((s) => s.status));
   const [name, setName] = useState('Route');
+  const [note, setNote] = useState('');
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id || typeof id !== 'string') {
-      return;
-    }
+    if (!id || typeof id !== 'string') return;
     let cancelled = false;
     getRoute(id)
       .then((row) => {
@@ -28,6 +49,7 @@ export default function RouteDetailsScreen() {
           return;
         }
         setName(row.name);
+        setNote(row.note ?? '');
         setCandidate(row.candidate);
       })
       .catch((caught: unknown) => {
@@ -50,6 +72,8 @@ export default function RouteDetailsScreen() {
     );
   }
 
+  const routeId = typeof id === 'string' ? id : '';
+
   return (
     <View style={styles.screen}>
       {candidate ? (
@@ -70,10 +94,13 @@ export default function RouteDetailsScreen() {
         </View>
       )}
       {candidate ? (
-        <View style={styles.banner}>
+        <ScrollView
+          style={styles.banner}
+          contentContainerStyle={styles.bannerInner}
+        >
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.body}>
-            {(candidate.geometry.lengthM / 1000).toFixed(1)} km · score{' '}
+            {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
             {Math.round(candidate.breakdown.score)}
           </Text>
           <Button
@@ -95,7 +122,37 @@ export default function RouteDetailsScreen() {
             variant="secondary"
             onPress={() => router.push(`/dev/sim?routeId=${id}`)}
           />
-        </View>
+          <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
+          <RouteMetaEditor
+            name={name}
+            note={note}
+            onRename={(next) => {
+              void renameRoute(routeId, next).then(() => setName(next));
+            }}
+            onNote={(next) => {
+              void setRouteNote(routeId, next).then(() => setNote(next));
+            }}
+            onDuplicate={() => {
+              void duplicateRoute(routeId).then((copyId) => {
+                if (copyId) router.replace(`/route/${copyId}`);
+              });
+            }}
+            onDelete={() => {
+              if (locked) return;
+              Alert.alert('Delete route', `Delete ${name}?`, [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => {
+                    void deleteRoutePack(routeId);
+                    void deleteRoute(routeId).then(() => router.replace('/'));
+                  },
+                },
+              ]);
+            }}
+          />
+        </ScrollView>
       ) : null}
     </View>
   );
@@ -108,13 +165,13 @@ const styles = StyleSheet.create({
     left: space.sm,
     right: space.sm,
     top: space.sm,
+    maxHeight: '72%',
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: space.md,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: space.sm,
   },
+  bannerInner: { padding: space.md, gap: space.sm },
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {

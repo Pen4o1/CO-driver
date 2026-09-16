@@ -123,3 +123,39 @@ export async function listDrives(): Promise<DriveRow[]> {
     stats: row.stats_json ? (JSON.parse(row.stats_json) as DriveStats) : null,
   }));
 }
+
+export type DriveHistoryRow = DriveRow & {
+  routeName: string;
+  geometryJson: string | null;
+};
+
+export async function listDriveHistory(): Promise<DriveHistoryRow[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    id: string;
+    route_id: string;
+    started_at: number;
+    ended_at: number | null;
+    distance_m: number;
+    duration_s: number;
+    stats_json: string | null;
+    route_name: string | null;
+    geometry_json: string | null;
+  }>(
+    `SELECT d.*, r.name AS route_name, r.geometry_json
+     FROM drives d
+     LEFT JOIN routes r ON r.id = d.route_id
+     ORDER BY d.started_at DESC`,
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    routeId: row.route_id,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    distanceM: row.distance_m,
+    durationS: row.duration_s,
+    stats: row.stats_json ? (JSON.parse(row.stats_json) as DriveStats) : null,
+    routeName: row.route_name ?? 'Deleted route',
+    geometryJson: row.geometry_json,
+  }));
+}

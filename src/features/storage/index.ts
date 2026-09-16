@@ -6,7 +6,17 @@ export {
   sqliteGridCache,
   sqliteRouteCache,
 } from './sqliteCache';
-export { getRoute, listRoutes, saveRoute } from './routesRepo';
+export {
+  deleteRoute,
+  duplicateRoute,
+  getRoute,
+  listRoutes,
+  renameRoute,
+  saveRoute,
+  setRouteFavourite,
+  setRouteNote,
+} from './routesRepo';
+export type { RouteSummary, SavedRouteRow } from './routesRepo';
 export { getVoicePrepare, saveVoicePrepare } from './voicePrepareRepo';
 export type { VoicePrepareRow } from './voicePrepareRepo';
 export {
@@ -15,7 +25,8 @@ export {
   finishDrive,
   getDrive,
   listDriveFixes,
+  listDriveHistory,
   listDrives,
 } from './drivesRepo';
-export type { DriveRow } from './drivesRepo';
+export type { DriveHistoryRow, DriveRow } from './drivesRepo';
 export { acceptDisclaimer, disclaimerAccepted } from './metaRepo';

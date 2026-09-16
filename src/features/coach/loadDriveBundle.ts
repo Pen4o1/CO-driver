@@ -1,18 +1,13 @@
-import { DEFAULT_NOTE_FILTER, derivePaceNotesDetailed } from '@/core/pacenotes';
 import { DEFAULT_TIMING, type TimingSettings } from '@/core/coach';
+import { filterFromPersisted } from '@/core/settings';
+import { DEFAULT_NOTE_FILTER, derivePaceNotesDetailed } from '@/core/pacenotes';
 import type { NoteFilterOptions, PaceNote, RouteCandidate } from '@/core/types';
 import { getRoute, getVoicePrepare } from '@/features/storage';
 import { clipLookup, type PreparedClip } from '@/features/voice/prepareRoute';
 import { useSettings } from '@/state/settings';
 
 export function filterFromSettings(): NoteFilterOptions {
-  const s = useSettings.getState();
-  return {
-    ...DEFAULT_NOTE_FILTER,
-    confirmCalls: s.confirmCalls,
-    chainRadius: s.chainRadius,
-    minGradeToCall: s.minGradeToCall,
-  };
+  return filterFromPersisted(useSettings.getState());
 }
 
 export function timingFromSettings(): TimingSettings {
@@ -49,3 +44,5 @@ export async function loadDriveBundle(
     clipCount: prepared?.clipCount ?? 0,
   };
 }
+
+export { DEFAULT_NOTE_FILTER };

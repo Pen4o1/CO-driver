@@ -53,9 +53,19 @@ export function NotesFilterPanel({ filter, onChange, noteCount }: Props) {
           onPress={() => toggle('includeStraights', !filter.includeStraights)}
         />
         <Chip
+          label="Crests"
+          selected={filter.includeCrests}
+          onPress={() => toggle('includeCrests', !filter.includeCrests)}
+        />
+        <Chip
           label="Finish"
           selected={filter.includeFinish}
           onPress={() => toggle('includeFinish', !filter.includeFinish)}
+        />
+        <Chip
+          label="Confirm calls"
+          selected={filter.confirmCalls}
+          onPress={() => toggle('confirmCalls', !filter.confirmCalls)}
         />
       </View>
       <Slider

@@ -33,7 +33,7 @@ The AWS raster-dem source is already on the map (`encoding: "terrarium"`).
 
 | Service | URL | Key | Fair use |
 |---|---|---|---|
-| Map tiles | OpenFreeMap `https://tiles.openfreemap.org/styles/liberty` | none | Public tiles; cache via the native SDK later (Phase 6) |
+| Map tiles | OpenFreeMap `https://tiles.openfreemap.org/styles/liberty` | none | Public tiles; cache with MapLibre `offlineManager.createPack` (Phase 6). Freely cacheable. |
 | Terrain DEM | AWS Terrarium `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png` | none | Public S3; don't scrape, just render |
 | Routing | OpenRouteService `https://api.openrouteservice.org/v2/directions/driving-car/geojson` | **free key, no card** (`EXPO_PUBLIC_ORS_API_KEY`) | 2,500 req/day, 40,000/month. Cache in SQLite. Back off on 429. |
 | Twisty routing (Phase 2) | Valhalla FOSSGIS `https://valhalla1.openstreetmap.de` | none | Volunteer server. Dev + personal only. Always send `User-Agent`. |
@@ -42,6 +42,16 @@ The AWS raster-dem source is already on the map (`encoding: "terrarium"`).
 | OSRM demo | `router.project-osrm.org` | none | Tests / fallback later. Not hit in Phase 1. |
 
 The only API key in the whole stack is the **free OpenRouteService key**. Everything else is keyless. No credit card anywhere.
+
+## Offline packs (Phase 6)
+
+From a saved route’s details screen, **Download offline pack**. That calls MapLibre `offlineManager.createPack` on the OpenFreeMap liberty style, for the route bbox buffered 2 km, zoom 8–16.
+
+Tiles are freely cacheable. There is no Mapbox token and no Mapbox offline billing.
+
+Terrarium DEM is added at runtime (`RasterDEMSource`), so it is **not** inside the style pack. After you have viewed the route online once, those PNG tiles sit in the ambient cache.
+
+Airplane-mode check: prepare voice, download the pack, toggle airplane mode, Recce → START. Calls must still play. The map should still show the corridor.
 
 ## User-Agent
 

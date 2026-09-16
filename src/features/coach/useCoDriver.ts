@@ -22,6 +22,8 @@ import type {
 import { appendDriveFix, createDrive, finishDrive } from '@/features/storage';
 import { attachVoiceInterruptions } from '@/features/voice';
 import type { PreparedClip } from '@/features/voice/prepareRoute';
+import { useSession } from '@/state/session';
+import { useSettings } from '@/state/settings';
 
 import { setLocationTaskListener } from './backgroundTask';
 import { geoFixFromLocation } from './geoFix';
@@ -125,7 +127,10 @@ export function useCoDriver(input: UseCoDriverInput) {
     const id = await createDrive(cfg.routeId, Date.now());
     setDriveId(id);
     setRunning(true);
-    void activateKeepAwakeAsync(AWAKE_TAG);
+    useSession.getState().setStatus('driving');
+    if (useSettings.getState().keepScreenOn) {
+      void activateKeepAwakeAsync(AWAKE_TAG);
+    }
     if (Platform.OS === 'web') {
       unsubRef.current = detach;
       return;
@@ -151,6 +156,7 @@ export function useCoDriver(input: UseCoDriverInput) {
 
   const stop = useCallback(async () => {
     setRunning(false);
+    useSession.getState().setStatus('idle');
     unsubRef.current?.();
     unsubRef.current = null;
     const engine = engineRef.current;
@@ -175,10 +181,24 @@ export function useCoDriver(input: UseCoDriverInput) {
   }, []);
 
   useEffect(() => {
+    if (!running || !output) return;
+    if (output.status === 'off-route') {
+      useSession.getState().setStatus('off-route');
+    } else if (output.status === 'finished') {
+      useSession.getState().setStatus('finished');
+    } else if (output.status === 'paused') {
+      useSession.getState().setStatus('paused');
+    } else {
+      useSession.getState().setStatus('driving');
+    }
+  }, [running, output]);
+
+  useEffect(() => {
     return () => {
       void stopBackgroundUpdates();
       void deactivateKeepAwake(AWAKE_TAG);
       voiceRef.current?.dispose();
+      useSession.getState().setStatus('idle');
     };
   }, []);
 

@@ -21,6 +21,14 @@ export { frechetDistanceM } from './frechet';
 export { deriveAscentDescent, smoothElevationM } from './elevation';
 export type { AscentDescent } from './elevation';
 export { boundingBox, buildRouteGeometry } from './buildGeometry';
+export { bufferBbox } from './bufferBbox';
+export type { BBox } from './bufferBbox';
+export {
+  latToTileY,
+  lngToTileX,
+  tileCountForBbox,
+  tileCountForZooms,
+} from './webMercator';
 export { destinationPoint } from './destination';
 export { overlapShare } from './overlap';
 export { decodePolyline } from './polyline6';

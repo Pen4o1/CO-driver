@@ -1,9 +1,9 @@
-import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { twistinessSoFar } from '@/core/coach';
+import { formatDistanceKm, formatSpeed } from '@/core/units';
 import { DriveLockControls } from '@/features/coach/DriveLockControls';
 import { HudNextCard } from '@/features/coach/HudNextCard';
 import { HudUpcoming } from '@/features/coach/HudUpcoming';
@@ -17,12 +17,12 @@ import { useSettings } from '@/state/settings';
 import { colors, space, type } from '@/ui/theme';
 
 export default function DriveHudScreen() {
-  useKeepAwake('apex-drive-hud');
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const voiceId = useSettings((s) => s.voiceId);
   const volume = useSettings((s) => s.voiceVolume);
   const providerId = useSettings((s) => s.providerId);
+  const units = useSettings((s) => s.unitSystem);
   const [ready, setReady] = useState(false);
   const [bundleError, setBundleError] = useState<string | null>(null);
   const [bundle, setBundle] =
@@ -122,14 +122,14 @@ export default function DriveHudScreen() {
 
   return (
     <View style={styles.screen}>
-      <HudNextCard note={next} metresToCall={metres} />
+      <HudNextCard note={next} metresToCall={metres} units={units} />
       <HudUpcoming notes={coach.output?.nextNotes.slice(1) ?? []} />
       <View style={styles.meta}>
         <Text style={styles.stat}>
-          {Math.round((coach.output?.debug.speedMps ?? 0) * 3.6)} km/h
+          {formatSpeed(coach.output?.debug.speedMps ?? 0, units)}
         </Text>
         <Text style={styles.stat}>
-          {(remainingM / 1000).toFixed(1)} km left
+          {formatDistanceKm(remainingM, units)} left
         </Text>
       </View>
       <View style={styles.twistTrack}>

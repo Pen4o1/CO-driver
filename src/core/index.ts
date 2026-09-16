@@ -7,3 +7,6 @@ export * from './routing';
 export * from './pacenotes';
 export * from './voice';
 export * from './coach';
+export * from './units';
+export * from './safety';
+export * from './settings';

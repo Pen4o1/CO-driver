@@ -1,6 +1,7 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { type StringCache } from './kvCache';
+import { migrateSchema } from './migrate';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS route_cache (
@@ -29,7 +30,10 @@ CREATE TABLE IF NOT EXISTS routes (
   candidate_json TEXT NOT NULL,
   length_m REAL NOT NULL,
   duration_s REAL NOT NULL,
-  bbox TEXT NOT NULL
+  bbox TEXT NOT NULL,
+  favourite INTEGER NOT NULL DEFAULT 0,
+  note TEXT,
+  photo_uri TEXT
 );
 CREATE TABLE IF NOT EXISTS voice_cache (
   text_hash TEXT PRIMARY KEY,
@@ -81,6 +85,7 @@ export async function getDb(): Promise<SQLiteDatabase> {
     dbPromise = (async () => {
       const db = await openDatabaseAsync('apex.db');
       await db.execAsync(SCHEMA);
+      await migrateSchema(db);
       return db;
     })();
   }

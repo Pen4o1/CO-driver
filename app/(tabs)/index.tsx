@@ -1,59 +1,109 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { listRoutes } from '@/features/storage';
+import { formatDistanceKm } from '@/core/units';
+import { DriveHistoryCard } from '@/features/library/DriveHistoryCard';
+import { RouteLibraryCard } from '@/features/library/RouteLibraryCard';
+import {
+  listDriveHistory,
+  listRoutes,
+  setRouteFavourite,
+  type DriveHistoryRow,
+  type RouteSummary,
+} from '@/features/storage';
+import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [routes, setRoutes] = useState<
-    { id: string; name: string; lengthM: number }[]
-  >([]);
+  const units = useSettings((s) => s.unitSystem);
+  const [routes, setRoutes] = useState<RouteSummary[]>([]);
+  const [drives, setDrives] = useState<DriveHistoryRow[]>([]);
+
+  const reload = useCallback(() => {
+    listRoutes()
+      .then(setRoutes)
+      .catch(() => setRoutes([]));
+    listDriveHistory()
+      .then(setDrives)
+      .catch(() => setDrives([]));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      listRoutes()
-        .then(setRoutes)
-        .catch(() => setRoutes([]));
-    }, []),
+      reload();
+    }, [reload]),
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Apex</Text>
       <Text style={styles.body}>
-        Pick a style, generate candidates, save the road you want.
+        Saved roads, last driven, ready for recce. Airplane mode works once the
+        route, notes, clips, and map pack are on device.
       </Text>
-      <Button
-        label="New route"
-        style={styles.cta}
-        onPress={() => router.push('/route/new')}
-      />
-      {routes.map((route) => (
-        <Button
-          key={route.id}
-          variant="secondary"
-          style={styles.cta}
-          label={`${route.name} · ${(route.lengthM / 1000).toFixed(1)} km`}
-          onPress={() => router.push(`/route/${route.id}`)}
-        />
-      ))}
-    </View>
+      <Button label="New route" onPress={() => router.push('/route/new')} />
+      <Text style={styles.heading}>Library</Text>
+      {routes.length === 0 ? (
+        <Text style={styles.body}>No saved routes yet.</Text>
+      ) : (
+        routes.map((route) => (
+          <RouteLibraryCard
+            key={route.id}
+            route={route}
+            units={units}
+            onOpen={() => router.push(`/route/${route.id}`)}
+            onFavourite={() => {
+              void setRouteFavourite(route.id, !route.favourite).then(reload);
+            }}
+          />
+        ))
+      )}
+      <Text style={styles.heading}>Drive history</Text>
+      {drives.length === 0 ? (
+        <Text style={styles.body}>No drives recorded yet.</Text>
+      ) : (
+        drives.map((drive) => (
+          <DriveHistoryCard
+            key={drive.id}
+            drive={drive}
+            units={units}
+            onOpen={() =>
+              router.push(`/drive/${drive.routeId}/summary?driveId=${drive.id}`)
+            }
+          />
+        ))
+      )}
+      <View>
+        <Text style={styles.meta}>
+          {routes.length} routes ·{' '}
+          {formatDistanceKm(
+            drives.reduce((sum, d) => sum + d.distanceM, 0),
+            units,
+          )}{' '}
+          driven
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: {
     padding: space.lg,
     gap: space.md,
+    paddingBottom: 48,
   },
   title: { fontSize: type.title, fontWeight: '700', color: colors.text },
-  body: { color: colors.muted, textAlign: 'center' },
-  cta: { alignSelf: 'stretch' },
+  heading: {
+    color: colors.text,
+    fontSize: type.body,
+    fontWeight: '700',
+    marginTop: space.sm,
+  },
+  body: { color: colors.muted },
+  meta: { color: colors.muted, fontSize: type.caption },
 });

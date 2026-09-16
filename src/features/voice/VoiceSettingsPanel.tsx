@@ -20,10 +20,7 @@ export function VoiceSettingsPanel() {
   const voiceId = useSettings((s) => s.voiceId);
   const duckOthers = useSettings((s) => s.duckOthers);
   const voiceVolume = useSettings((s) => s.voiceVolume);
-  const setTtsProviderId = useSettings((s) => s.setTtsProviderId);
-  const setVoiceId = useSettings((s) => s.setVoiceId);
-  const setDuckOthers = useSettings((s) => s.setDuckOthers);
-  const setVoiceVolume = useSettings((s) => s.setVoiceVolume);
+  const patch = useSettings((s) => s.patch);
 
   const [voices, setVoices] = useState<Voice[]>([]);
   const [available, setAvailable] = useState(false);
@@ -44,16 +41,16 @@ export function VoiceSettingsPanel() {
       setAvailable(ok);
       setVoices(listed);
       if (listed.length > 0 && !listed.some((v) => v.id === voiceId)) {
-        setVoiceId(listed[0].id);
+        patch({ voiceId: listed[0].id });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [ttsProviderId, voiceId, setVoiceId]);
+  }, [ttsProviderId, voiceId, patch]);
 
   const pick = (id: TtsProviderId) => {
-    setTtsProviderId(id);
+    patch({ ttsProviderId: id });
     setStatus(null);
   };
 
@@ -86,7 +83,7 @@ export function VoiceSettingsPanel() {
             key={voice.id}
             label={voice.name}
             selected={voiceId === voice.id}
-            onPress={() => setVoiceId(voice.id)}
+            onPress={() => patch({ voiceId: voice.id })}
           />
         ))}
       </View>
@@ -96,7 +93,7 @@ export function VoiceSettingsPanel() {
           selected={duckOthers}
           onPress={() => {
             const next = !duckOthers;
-            setDuckOthers(next);
+            patch({ duckOthers: next });
             void configureCoDriverAudio({ duck: next, background: true });
           }}
         />
@@ -104,7 +101,7 @@ export function VoiceSettingsPanel() {
           label="Pause music"
           selected={!duckOthers}
           onPress={() => {
-            setDuckOthers(false);
+            patch({ duckOthers: false });
             void configureCoDriverAudio({ duck: false, background: true });
           }}
         />
@@ -115,7 +112,7 @@ export function VoiceSettingsPanel() {
         min={0}
         max={10}
         step={1}
-        onChange={(v) => setVoiceVolume(v / 10)}
+        onChange={(v) => patch({ voiceVolume: v / 10 })}
       />
       <Button
         label="Play test phrase"

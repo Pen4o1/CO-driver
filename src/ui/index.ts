@@ -4,5 +4,5 @@ export { Card } from './Card';
 export { Chip } from './Chip';
 export { TextField } from './TextField';
 export { Slider } from './Slider';
-export { GradeBadge } from './GradeBadge';
+export { GradeBadge, GradeLegend } from './GradeBadge';
 export { DirectionArrow } from './DirectionArrow';

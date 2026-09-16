@@ -8,19 +8,38 @@ type Props = {
   size?: 'lg' | 'md';
 };
 
-/** Digit + colour + rounded-rect shape (not colour alone). */
+/** Digit + colour + shape. Colour is never the only signal. */
+const RADIUS: Record<TurnGrade, number> = {
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 22,
+  6: 32,
+};
+
+const GRADE_NAME: Record<TurnGrade, string> = {
+  1: 'hairpin',
+  2: 'very tight',
+  3: 'tight',
+  4: 'medium',
+  5: 'fast',
+  6: 'flat',
+};
+
 export function GradeBadge({ grade, size = 'lg' }: Props) {
   const dim = size === 'lg' ? 64 : 40;
   const font = size === 'lg' ? type.hud : type.body;
   return (
     <View
-      accessibilityLabel={`Grade ${grade}`}
+      accessibilityLabel={`Grade ${grade} ${GRADE_NAME[grade]}`}
       style={[
         styles.badge,
         {
           width: dim,
           height: dim,
           backgroundColor: gradeColor[grade],
+          borderRadius: RADIUS[grade],
         },
       ]}
     >
@@ -29,9 +48,23 @@ export function GradeBadge({ grade, size = 'lg' }: Props) {
   );
 }
 
+/** Non-interactive legend chip used in settings. */
+export function GradeLegend() {
+  const grades: TurnGrade[] = [1, 2, 3, 4, 5, 6];
+  return (
+    <View
+      style={styles.legend}
+      accessibilityLabel="Grade colour and shape legend"
+    >
+      {grades.map((g) => (
+        <GradeBadge key={g} grade={g} size="md" />
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -39,4 +72,5 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontWeight: '800',
   },
+  legend: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
 });

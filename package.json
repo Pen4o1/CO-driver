@@ -48,7 +48,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "smoke": "npm run typecheck && npm run lint && npm test"
   },
   "private": true,
   "jest": {

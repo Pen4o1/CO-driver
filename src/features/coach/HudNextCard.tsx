@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { PaceNote } from '@/core/types';
+import { formatLengthM, type UnitSystem } from '@/core/units';
 import { DirectionArrow } from '@/ui/DirectionArrow';
 import { GradeBadge } from '@/ui/GradeBadge';
 import { colors, space, type } from '@/ui/theme';
@@ -8,9 +9,10 @@ import { colors, space, type } from '@/ui/theme';
 type Props = {
   note: PaceNote | null;
   metresToCall: number | null;
+  units?: UnitSystem;
 };
 
-export function HudNextCard({ note, metresToCall }: Props) {
+export function HudNextCard({ note, metresToCall, units = 'metric' }: Props) {
   const remaining = metresToCall ?? 0;
   const bar = remaining <= 0 ? 0 : Math.min(1, remaining / 200);
   return (
@@ -27,7 +29,7 @@ export function HudNextCard({ note, metresToCall }: Props) {
         <Text style={styles.metres}>
           {metresToCall === null
             ? ''
-            : `${Math.max(0, Math.round(remaining))} m`}
+            : formatLengthM(Math.max(0, remaining), units)}
         </Text>
       </View>
       <View style={styles.track}>

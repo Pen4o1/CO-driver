@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { PinsStep } from '@/features/routing/builder/PinsStep';
@@ -6,6 +7,7 @@ import { StyleStep } from '@/features/routing/builder/StyleStep';
 import { runCandidateSearch } from '@/features/routing/runCandidateSearch';
 import { RouteMap } from '@/features/maps/RouteMap';
 import { useRouteDraft } from '@/state/routeDraft';
+import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { colors, space } from '@/ui/theme';
@@ -22,6 +24,12 @@ export default function NewRouteScreen() {
   const setEnd = useRouteDraft((s) => s.setEnd);
   const setStep = useRouteDraft((s) => s.setStep);
   const placeOnMap = useRouteDraft((s) => s.placeOnMap);
+  const setProfileId = useRouteDraft((s) => s.setProfileId);
+  const defaultProfileId = useSettings((s) => s.defaultProfileId);
+
+  useEffect(() => {
+    setProfileId(defaultProfileId);
+  }, [defaultProfileId, setProfileId]);
 
   if (Platform.OS === 'web') {
     return (
