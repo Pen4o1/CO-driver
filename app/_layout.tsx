@@ -11,7 +11,7 @@ import {
 import { disclaimerAccepted } from '@/features/storage';
 import { configureCoDriverAudio } from '@/features/voice';
 import '@/features/coach/backgroundTask';
-import { colors } from '@/ui/theme';
+import { stackHeader } from '@/ui/theme';
 
 export default function RootLayout() {
   const [booted, setBooted] = useState(false);
@@ -53,18 +53,23 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.text,
-          contentStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="route" options={{ headerShown: false }} />
-        <Stack.Screen name="drive" options={{ headerShown: false }} />
-        <Stack.Screen name="dev" options={{ title: 'Dev' }} />
+      <Stack screenOptions={stackHeader}>
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false, title: 'Home' }}
+        />
+        <Stack.Screen
+          name="route"
+          options={{ headerShown: false, title: 'Route' }}
+        />
+        <Stack.Screen
+          name="drive"
+          options={{ headerShown: false, title: 'Drive' }}
+        />
+        <Stack.Screen
+          name="dev"
+          options={{ headerShown: false, title: 'Dev' }}
+        />
       </Stack>
     </>
   );

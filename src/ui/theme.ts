@@ -41,3 +41,12 @@ export const type = {
   caption: 13,
   hud: 28,
 } as const;
+
+/** Shared stack chrome. Back control is the chevron only, so it never shows a route segment. */
+export const stackHeader = {
+  headerStyle: { backgroundColor: colors.bg },
+  headerTintColor: colors.text,
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: colors.bg },
+  headerBackButtonDisplayMode: 'minimal' as const,
+};

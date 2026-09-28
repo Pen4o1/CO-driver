@@ -1,4 +1,4 @@
-export { colors, gradeColor, space, type } from './theme';
+export { colors, gradeColor, space, stackHeader, type } from './theme';
 export { Button } from './Button';
 export { Card } from './Card';
 export { Chip } from './Chip';
