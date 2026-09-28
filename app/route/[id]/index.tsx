@@ -1,30 +1,13 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RouteCandidate } from '@/core/types';
-import { canMutateLibrary } from '@/core/safety';
 import { formatDistanceKm } from '@/core/units';
-import { RouteMetaEditor } from '@/features/library/RouteMetaEditor';
 import { OfflinePackCard } from '@/features/maps/OfflinePackCard';
 import { RouteMap } from '@/features/maps/RouteMap';
-import {
-  deleteRoute,
-  duplicateRoute,
-  getRoute,
-  renameRoute,
-  setRouteNote,
-} from '@/features/storage';
-import { deleteRoutePack } from '@/features/maps/offlinePacks';
-import { useSession } from '@/state/session';
+import { getRoute } from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { Sheet } from '@/ui/Sheet';
@@ -33,16 +16,13 @@ import { colors, space, type } from '@/ui/theme';
 export default function RouteDetailsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const units = useSettings((s) => s.unitSystem);
-  const locked = !canMutateLibrary(useSession((s) => s.status));
   const [name, setName] = useState('Route');
-  const [note, setNote] = useState('');
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     if (!id || typeof id !== 'string') return;
     let cancelled = false;
     getRoute(id)
@@ -50,10 +30,11 @@ export default function RouteDetailsScreen() {
         if (cancelled) return;
         if (!row) {
           setError('Route not found');
+          setCandidate(null);
           return;
         }
+        setError(null);
         setName(row.name);
-        setNote(row.note ?? '');
         setCandidate(row.candidate);
       })
       .catch((caught: unknown) => {
@@ -65,6 +46,8 @@ export default function RouteDetailsScreen() {
       cancelled = true;
     };
   }, [id]);
+
+  useFocusEffect(reload);
 
   if (Platform.OS === 'web') {
     return (
@@ -105,65 +88,34 @@ export default function RouteDetailsScreen() {
             { paddingBottom: Math.max(insets.bottom, space.sm) },
           ]}
         >
-          <Sheet maxHeight={height * 0.48}>
-            <Text style={styles.title}>{name}</Text>
-            <Text style={styles.body}>
-              {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
-              {Math.round(candidate.breakdown.score)}
-            </Text>
-            <Button
-              label="Recce / Start"
-              onPress={() => router.push(`/route/${id}/recce`)}
-            />
-            <View style={styles.row}>
+          <Sheet>
+            <View style={styles.head}>
+              <View style={styles.headText}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {name}
+                </Text>
+                <Text style={styles.body}>
+                  {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
+                  {Math.round(candidate.breakdown.score)}
+                </Text>
+              </View>
               <Button
-                label="Prepare voice"
-                variant="secondary"
-                style={styles.flexBtn}
-                onPress={() => router.push(`/route/${id}/prepare`)}
-              />
-              <Button
-                label="Preview calls"
-                variant="secondary"
-                style={styles.flexBtn}
-                onPress={() => router.push(`/dev/notes?routeId=${id}`)}
+                label="Edit"
+                variant="ghost"
+                accessibilityLabel="Edit route"
+                onPress={() => router.push(`/route/${routeId}/edit`)}
               />
             </View>
             <Button
-              label="Sim Drive"
-              variant="ghost"
-              onPress={() => router.push(`/dev/sim?routeId=${id}`)}
+              label="Recce"
+              onPress={() => router.push(`/route/${routeId}/recce`)}
+            />
+            <Button
+              label="Prepare voice"
+              variant="secondary"
+              onPress={() => router.push(`/route/${routeId}/prepare`)}
             />
             <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
-            <RouteMetaEditor
-              name={name}
-              note={note}
-              onRename={(next) => {
-                void renameRoute(routeId, next).then(() => setName(next));
-              }}
-              onNote={(next) => {
-                void setRouteNote(routeId, next).then(() => setNote(next));
-              }}
-              onDuplicate={() => {
-                void duplicateRoute(routeId).then((copyId) => {
-                  if (copyId) router.replace(`/route/${copyId}`);
-                });
-              }}
-              onDelete={() => {
-                if (locked) return;
-                Alert.alert('Delete route', `Delete ${name}?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                      void deleteRoutePack(routeId);
-                      void deleteRoute(routeId).then(() => router.replace('/'));
-                    },
-                  },
-                ]);
-              }}
-            />
           </Sheet>
         </View>
       ) : null}
@@ -179,8 +131,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  row: { flexDirection: 'row', gap: space.sm },
-  flexBtn: { flex: 1 },
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  headText: { flex: 1, gap: 2 },
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {
