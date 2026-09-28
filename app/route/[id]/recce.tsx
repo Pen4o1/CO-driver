@@ -1,7 +1,8 @@
 import * as Battery from 'expo-battery';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SAFETY_DISCLAIMER_BG_EU } from '@/core/safety';
 import { currentFix, gpsBand } from '@/features/coach';
@@ -10,16 +11,19 @@ import { acceptDisclaimer, disclaimerAccepted } from '@/features/storage';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
 
-function bandColor(band: 'good' | 'ok' | 'poor'): string {
-  if (band === 'good') return colors.grade5;
-  if (band === 'ok') return colors.grade3;
+type Tone = 'good' | 'ok' | 'poor';
+
+function toneColor(tone: Tone): string {
+  if (tone === 'good') return colors.grade5;
+  if (tone === 'ok') return colors.grade3;
   return colors.danger;
 }
 
 export default function RecceScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [gps, setGps] = useState<'good' | 'ok' | 'poor'>('poor');
+  const [gps, setGps] = useState<Tone>('poor');
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
   const [battery, setBattery] = useState<number | null>(null);
   const [clips, setClips] = useState({ ready: 0, notes: 0 });
@@ -67,102 +71,172 @@ export default function RecceScreen() {
     router.replace(`/drive/${id}`);
   };
 
+  const clipsReady = clips.notes > 0 && clips.ready >= clips.notes;
+  const clipsTone: Tone =
+    clips.notes === 0
+      ? 'ok'
+      : clipsReady
+        ? 'good'
+        : clips.ready === 0
+          ? 'poor'
+          : 'ok';
+  const batteryTone: Tone =
+    battery === null ? 'ok' : battery < 20 ? 'poor' : 'good';
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Recce</Text>
-      <Row
-        label="GPS"
-        value={accuracyM === null ? gps : `${gps} · ${Math.round(accuracyM)} m`}
-        color={bandColor(gps)}
-      />
-      <Row
-        label="Voice clips"
-        value={`${clips.ready} / ${clips.notes}`}
-        color={
-          clips.ready >= clips.notes && clips.notes > 0
-            ? colors.grade5
-            : colors.grade3
-        }
-      />
-      <Row
-        label="Battery"
-        value={battery === null ? 'unknown' : `${battery}%`}
-        color={battery !== null && battery < 20 ? colors.danger : colors.grade5}
-      />
-      <Text style={styles.body}>
-        Keep-awake will lock on START. Enable Do Not Disturb.
-      </Text>
-      {!legal ? (
-        <Pressable
-          accessibilityLabel="Acknowledge safety disclaimer"
-          onPress={() => {
-            void acceptDisclaimer().then(() => setLegal(true));
-          }}
-          style={styles.legal}
-        >
-          <Text style={styles.legalText}>{SAFETY_DISCLAIMER_BG_EU}</Text>
-          <Text style={styles.ack}>Tap to acknowledge (once per install)</Text>
-        </Pressable>
-      ) : (
-        <Text style={styles.body}>Safety acknowledgment recorded.</Text>
-      )}
-      {error ? <Text style={styles.err}>{error}</Text> : null}
-      <Button
-        label="Prepare voice"
-        variant="secondary"
-        onPress={() => router.push(`/route/${id}/prepare`)}
-      />
-      <Button label="START" onPress={() => void start()} disabled={!legal} />
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.lead}>
+          Check the fix, the clips, and the battery. Then start.
+        </Text>
+        <Check
+          label="GPS"
+          value={gps === 'good' ? 'Good' : gps === 'ok' ? 'Fair' : 'Weak'}
+          detail={
+            accuracyM === null
+              ? 'Waiting for a fix'
+              : `${Math.round(accuracyM)} m`
+          }
+          tone={gps}
+        />
+        <Check
+          label="Voice clips"
+          value={`${clips.ready} / ${clips.notes}`}
+          detail={
+            clips.notes === 0
+              ? 'No notes on this route'
+              : clipsReady
+                ? 'Cached for offline'
+                : 'Prepare voice before you roll'
+          }
+          tone={clipsTone}
+        />
+        <Check
+          label="Battery"
+          value={battery === null ? '—' : `${battery}%`}
+          detail={
+            battery === null ? 'Unavailable' : battery < 20 ? 'Low' : 'OK'
+          }
+          tone={batteryTone}
+        />
+        <Text style={styles.hint}>
+          Keep-awake locks on START. Turn on Do Not Disturb.
+        </Text>
+        {!legal ? (
+          <Pressable
+            accessibilityLabel="Acknowledge safety disclaimer"
+            onPress={() => {
+              void acceptDisclaimer().then(() => setLegal(true));
+            }}
+            style={styles.legal}
+          >
+            <Text style={styles.legalText}>{SAFETY_DISCLAIMER_BG_EU}</Text>
+            <Text style={styles.ack}>Tap to acknowledge</Text>
+          </Pressable>
+        ) : (
+          <Check
+            label="Safety"
+            value="OK"
+            detail="Acknowledged for this install"
+            tone="good"
+          />
+        )}
+        {error ? <Text style={styles.err}>{error}</Text> : null}
+      </ScrollView>
+      <View
+        style={[
+          styles.footer,
+          { paddingBottom: Math.max(insets.bottom, space.md) },
+        ]}
+      >
+        <Button
+          label="Prepare voice"
+          variant="secondary"
+          onPress={() => router.push(`/route/${id}/prepare`)}
+        />
+        <Button
+          label="START"
+          onPress={() => void start()}
+          disabled={!legal}
+          style={styles.start}
+        />
+      </View>
     </View>
   );
 }
 
-function Row({
+function Check({
   label,
   value,
-  color,
+  detail,
+  tone,
 }: {
   label: string;
   value: string;
-  color: string;
+  detail: string;
+  tone: Tone;
 }) {
+  const color = toneColor(tone);
   return (
-    <View style={styles.row}>
+    <View
+      accessibilityLabel={`${label}. ${value}. ${detail}`}
+      style={styles.check}
+    >
       <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <View style={styles.checkCopy}>
+        <Text style={styles.checkLabel}>{label}</Text>
+        <Text style={styles.checkDetail}>{detail}</Text>
+      </View>
+      <Text style={[styles.checkValue, { color }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: {
     padding: space.lg,
-    gap: space.md,
-    justifyContent: 'center',
+    gap: space.sm,
+    paddingBottom: space.md,
   },
-  title: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  body: { color: colors.muted, fontSize: type.body },
-  row: {
+  lead: { color: colors.muted, fontSize: type.body, marginBottom: space.xs },
+  hint: { color: colors.muted, fontSize: type.caption },
+  check: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    minHeight: 44,
-  },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  label: { color: colors.text, fontWeight: '700', width: 110 },
-  value: { color: colors.muted, flex: 1 },
-  legal: {
+    minHeight: 64,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: space.md,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+  },
+  dot: { width: 14, height: 14, borderRadius: 7 },
+  checkCopy: { flex: 1, gap: 2 },
+  checkLabel: { color: colors.text, fontWeight: '700', fontSize: type.body },
+  checkDetail: { color: colors.muted, fontSize: type.caption },
+  checkValue: { fontSize: type.hud, fontWeight: '800' },
+  legal: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
     gap: space.sm,
+    minHeight: 44,
   },
   legalText: { color: colors.text, fontSize: type.caption },
   ack: { color: colors.accent, fontWeight: '700' },
   err: { color: colors.danger },
+  footer: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  start: { minHeight: 64 },
 });

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { twistinessSoFar } from '@/core/coach';
 import { formatDistanceKm, formatSpeed } from '@/core/units';
@@ -18,6 +19,9 @@ import { colors, space, type } from '@/ui/theme';
 
 export default function DriveHudScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const landscape = width > height;
   const { id } = useLocalSearchParams<{ id: string }>();
   const voiceId = useSettings((s) => s.voiceId);
   const volume = useSettings((s) => s.voiceVolume);
@@ -110,6 +114,14 @@ export default function DriveHudScreen() {
       ),
     [bundle?.notes, coach.output?.positionAlongRoute],
   );
+  const twistPct = Math.round(twist * 100);
+  const status = coach.output?.status;
+  const statusLabel =
+    status === 'off-route'
+      ? 'Off route'
+      : status === 'paused'
+        ? 'Paused'
+        : null;
 
   const onStop = () => {
     const driveId = coach.driveId;
@@ -121,29 +133,60 @@ export default function DriveHudScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <HudNextCard note={next} metresToCall={metres} units={units} />
-      <HudUpcoming notes={coach.output?.nextNotes.slice(1) ?? []} />
-      <View style={styles.meta}>
-        <Text style={styles.stat}>
-          {formatSpeed(coach.output?.debug.speedMps ?? 0, units)}
-        </Text>
-        <Text style={styles.stat}>
-          {formatDistanceKm(remainingM, units)} left
-        </Text>
+    <View
+      style={[
+        styles.screen,
+        {
+          paddingTop: insets.top + space.sm,
+          paddingBottom: Math.max(insets.bottom, space.sm),
+          paddingLeft: Math.max(insets.left, space.md),
+          paddingRight: Math.max(insets.right, space.md),
+        },
+      ]}
+    >
+      <View style={[styles.body, landscape && styles.bodyLand]}>
+        <View style={[styles.hero, landscape && styles.heroLand]}>
+          <HudNextCard
+            note={next}
+            metresToCall={metres}
+            units={units}
+            layout={landscape ? 'row' : 'stack'}
+          />
+        </View>
+        <View style={[styles.side, landscape && styles.sideLand]}>
+          <HudUpcoming
+            notes={coach.output?.nextNotes.slice(1) ?? []}
+            compact={landscape}
+          />
+          <View style={styles.meta}>
+            <Text style={styles.stat}>
+              {formatSpeed(coach.output?.debug.speedMps ?? 0, units)}
+            </Text>
+            <Text style={styles.stat}>
+              {formatDistanceKm(remainingM, units)} left
+            </Text>
+          </View>
+          <View
+            accessibilityLabel={`Twistiness ${twistPct} percent`}
+            style={styles.twistRow}
+          >
+            <Text style={styles.twistLabel}>Twist {twistPct}</Text>
+            <View style={styles.twistTrack}>
+              <View style={[styles.twistFill, { width: `${twistPct}%` }]} />
+            </View>
+          </View>
+        </View>
       </View>
-      <View style={styles.twistTrack}>
-        <View
-          style={[styles.twistFill, { width: `${Math.round(twist * 100)}%` }]}
-        />
-      </View>
+      {statusLabel ? <Text style={styles.status}>{statusLabel}</Text> : null}
       {coach.error ? <Text style={styles.err}>{coach.error}</Text> : null}
       {bundleError ? <Text style={styles.err}>{bundleError}</Text> : null}
-      <DriveLockControls
-        muted={coach.muted}
-        onMute={() => coach.mute(!coach.muted)}
-        onStop={onStop}
-      />
+      <View style={styles.controls}>
+        <DriveLockControls
+          muted={coach.muted}
+          onMute={() => coach.mute(!coach.muted)}
+          onStop={onStop}
+        />
+      </View>
     </View>
   );
 }
@@ -152,12 +195,26 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
-    padding: space.lg,
-    gap: space.md,
-    justifyContent: 'space-between',
+    gap: space.sm,
   },
-  meta: { flexDirection: 'row', justifyContent: 'space-between' },
+  body: { flex: 1, gap: space.sm },
+  bodyLand: { flexDirection: 'row', alignItems: 'stretch' },
+  hero: { flex: 1.4 },
+  heroLand: { flex: 1.2 },
+  side: { gap: space.sm, justifyContent: 'flex-end' },
+  sideLand: { flex: 1, justifyContent: 'center' },
+  meta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: space.sm,
+  },
   stat: { color: colors.text, fontSize: type.hud, fontWeight: '800' },
+  twistRow: { gap: 4 },
+  twistLabel: {
+    color: colors.muted,
+    fontSize: type.caption,
+    fontWeight: '700',
+  },
   twistTrack: {
     height: 10,
     borderRadius: 999,
@@ -165,5 +222,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   twistFill: { height: 10, backgroundColor: colors.accent },
-  err: { color: colors.danger },
+  status: { color: colors.danger, fontSize: type.hud, fontWeight: '800' },
+  err: { color: colors.danger, fontSize: type.body },
+  controls: { flexShrink: 0 },
 });
