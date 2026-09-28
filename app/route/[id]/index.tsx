@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RouteCandidate } from '@/core/types';
 import { canMutateLibrary } from '@/core/safety';
@@ -26,10 +27,13 @@ import { deleteRoutePack } from '@/features/maps/offlinePacks';
 import { useSession } from '@/state/session';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
+import { Sheet } from '@/ui/Sheet';
 import { colors, space, type } from '@/ui/theme';
 
 export default function RouteDetailsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const units = useSettings((s) => s.unitSystem);
   const locked = !canMutateLibrary(useSession((s) => s.status));
@@ -94,65 +98,74 @@ export default function RouteDetailsScreen() {
         </View>
       )}
       {candidate ? (
-        <ScrollView
-          style={styles.banner}
-          contentContainerStyle={styles.bannerInner}
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.bottom,
+            { paddingBottom: Math.max(insets.bottom, space.sm) },
+          ]}
         >
-          <Text style={styles.title}>{name}</Text>
-          <Text style={styles.body}>
-            {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
-            {Math.round(candidate.breakdown.score)}
-          </Text>
-          <Button
-            label="Preview co-driver calls"
-            variant="secondary"
-            onPress={() => router.push(`/dev/notes?routeId=${id}`)}
-          />
-          <Button
-            label="Prepare voice"
-            variant="secondary"
-            onPress={() => router.push(`/route/${id}/prepare`)}
-          />
-          <Button
-            label="Recce / Start"
-            onPress={() => router.push(`/route/${id}/recce`)}
-          />
-          <Button
-            label="Sim Drive"
-            variant="secondary"
-            onPress={() => router.push(`/dev/sim?routeId=${id}`)}
-          />
-          <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
-          <RouteMetaEditor
-            name={name}
-            note={note}
-            onRename={(next) => {
-              void renameRoute(routeId, next).then(() => setName(next));
-            }}
-            onNote={(next) => {
-              void setRouteNote(routeId, next).then(() => setNote(next));
-            }}
-            onDuplicate={() => {
-              void duplicateRoute(routeId).then((copyId) => {
-                if (copyId) router.replace(`/route/${copyId}`);
-              });
-            }}
-            onDelete={() => {
-              if (locked) return;
-              Alert.alert('Delete route', `Delete ${name}?`, [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete',
-                  style: 'destructive',
-                  onPress: () => {
-                    void deleteRoutePack(routeId);
-                    void deleteRoute(routeId).then(() => router.replace('/'));
+          <Sheet maxHeight={height * 0.48}>
+            <Text style={styles.title}>{name}</Text>
+            <Text style={styles.body}>
+              {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
+              {Math.round(candidate.breakdown.score)}
+            </Text>
+            <Button
+              label="Recce / Start"
+              onPress={() => router.push(`/route/${id}/recce`)}
+            />
+            <View style={styles.row}>
+              <Button
+                label="Prepare voice"
+                variant="secondary"
+                style={styles.flexBtn}
+                onPress={() => router.push(`/route/${id}/prepare`)}
+              />
+              <Button
+                label="Preview calls"
+                variant="secondary"
+                style={styles.flexBtn}
+                onPress={() => router.push(`/dev/notes?routeId=${id}`)}
+              />
+            </View>
+            <Button
+              label="Sim Drive"
+              variant="ghost"
+              onPress={() => router.push(`/dev/sim?routeId=${id}`)}
+            />
+            <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
+            <RouteMetaEditor
+              name={name}
+              note={note}
+              onRename={(next) => {
+                void renameRoute(routeId, next).then(() => setName(next));
+              }}
+              onNote={(next) => {
+                void setRouteNote(routeId, next).then(() => setNote(next));
+              }}
+              onDuplicate={() => {
+                void duplicateRoute(routeId).then((copyId) => {
+                  if (copyId) router.replace(`/route/${copyId}`);
+                });
+              }}
+              onDelete={() => {
+                if (locked) return;
+                Alert.alert('Delete route', `Delete ${name}?`, [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      void deleteRoutePack(routeId);
+                      void deleteRoute(routeId).then(() => router.replace('/'));
+                    },
                   },
-                },
-              ]);
-            }}
-          />
-        </ScrollView>
+                ]);
+              }}
+            />
+          </Sheet>
+        </View>
       ) : null}
     </View>
   );
@@ -160,18 +173,14 @@ export default function RouteDetailsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  banner: {
+  bottom: {
     position: 'absolute',
-    left: space.sm,
-    right: space.sm,
-    top: space.sm,
-    maxHeight: '72%',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  bannerInner: { padding: space.md, gap: space.sm },
+  row: { flexDirection: 'row', gap: space.sm },
+  flexBtn: { flex: 1 },
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {

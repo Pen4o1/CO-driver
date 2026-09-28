@@ -41,11 +41,10 @@ export default function HomeScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Apex</Text>
       <Text style={styles.body}>
-        Saved roads, last driven, ready for recce. Airplane mode works once the
-        route, notes, clips, and map pack are on device.
+        Build a road, pick how twisty, drive with pace notes.
       </Text>
       <Button label="New route" onPress={() => router.push('/route/new')} />
-      <Text style={styles.heading}>Library</Text>
+      <Text style={styles.heading}>Library · {routes.length}</Text>
       {routes.length === 0 ? (
         <Text style={styles.body}>No saved routes yet.</Text>
       ) : (
@@ -61,7 +60,7 @@ export default function HomeScreen() {
           />
         ))
       )}
-      <Text style={styles.heading}>Drive history</Text>
+      <Text style={styles.heading}>History · {drives.length}</Text>
       {drives.length === 0 ? (
         <Text style={styles.body}>No drives recorded yet.</Text>
       ) : (

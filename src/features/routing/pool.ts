@@ -46,3 +46,39 @@ export function withTimeout<T>(
     );
   });
 }
+
+/**
+ * Run workers with a wall-clock deadline. In-flight work still finishes and
+ * is kept; new items are not started after `timeoutMs`. Partial success is
+ * the intended outcome for candidate search.
+ */
+export async function collectJobs<T, R>(
+  items: T[],
+  opts: { concurrency: number; timeoutMs: number; now?: () => number },
+  worker: (item: T) => Promise<R>,
+): Promise<{ values: R[]; errors: unknown[] }> {
+  const values: R[] = [];
+  const errors: unknown[] = [];
+  const now = opts.now ?? Date.now;
+  const startedAt = now();
+  let next = 0;
+
+  async function runOne(): Promise<void> {
+    while (next < items.length) {
+      if (now() - startedAt >= opts.timeoutMs) {
+        return;
+      }
+      const index = next;
+      next += 1;
+      try {
+        values.push(await worker(items[index]));
+      } catch (reason) {
+        errors.push(reason);
+      }
+    }
+  }
+
+  const workerCount = Math.max(1, Math.min(opts.concurrency, items.length));
+  await Promise.all(Array.from({ length: workerCount }, () => runOne()));
+  return { values, errors };
+}

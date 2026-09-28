@@ -2,6 +2,7 @@ import { isAppError } from '@/core/errors';
 import { generateCandidates } from '@/features/routing/generateCandidates';
 import { getProviderRegistry, getRoadSnapper } from '@/features/routing';
 import { useRouteDraft } from '@/state/routeDraft';
+import { useSettings } from '@/state/settings';
 
 export async function runCandidateSearch(): Promise<void> {
   const draft = useRouteDraft.getState();
@@ -17,6 +18,7 @@ export async function runCandidateSearch(): Promise<void> {
   draft.setErrorMessage(null);
   try {
     const registry = getProviderRegistry();
+    const preferId = useSettings.getState().providerId;
     const candidates = await generateCandidates(
       {
         start: draft.start,
@@ -25,10 +27,12 @@ export async function runCandidateSearch(): Promise<void> {
         loopDistanceKm: draft.loopDistanceKm,
         profileId: draft.profileId,
         custom: draft.custom,
+        preferId,
       },
       {
         ors: registry.get('ors'),
         valhalla: registry.get('valhalla'),
+        mock: registry.get('mock'),
         snap: getRoadSnapper(),
       },
     );

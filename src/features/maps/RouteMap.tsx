@@ -55,7 +55,7 @@ export function RouteMap({
       return;
     }
     cameraRef.current?.fitBounds(geometry.bbox, {
-      padding: { top: 120, right: 40, bottom: 280, left: 40 },
+      padding: { top: 88, right: 40, bottom: 300, left: 40 },
       duration: 600,
       easing: 'ease',
     });

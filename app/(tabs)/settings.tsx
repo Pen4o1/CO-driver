@@ -40,7 +40,8 @@ export default function SettingsScreen() {
         />
       </View>
       <Text style={styles.hint}>
-        Mock draws a straight line and needs no key. ORS needs
+        Mock is offline and needs no key. Otherwise Apex asks both Valhalla and
+        OpenRouteService, then ranks what comes back. ORS needs
         EXPO_PUBLIC_ORS_API_KEY (free, no card). Valhalla is keyless.
       </Text>
       <VoiceSettingsPanel />

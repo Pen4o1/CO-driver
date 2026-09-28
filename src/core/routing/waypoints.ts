@@ -30,7 +30,7 @@ export function planWaypointVariants(
   strategy: WaypointStrategy,
 ): WaypointVariant[] {
   const lengthM = haversineM(start, end);
-  if (lengthM < 2000) {
+  if (strategy === 'none' || lengthM < 2000) {
     return [];
   }
   const k = segmentCount(lengthM / 1000);
@@ -55,12 +55,16 @@ export function planWaypointVariants(
     alternate.push(i % 2 === 0 ? L : R);
   }
 
-  return [
+  const aggressive: WaypointVariant[] = [
     { id: 'left', rawPoints: left },
     { id: 'right', rawPoints: right },
     { id: 'near-left', rawPoints: nearLeft },
     { id: 'alternate', rawPoints: alternate },
   ];
+  if (strategy === 'moderate') {
+    return aggressive.slice(0, 2);
+  }
+  return aggressive;
 }
 
 export function withEndpoints(

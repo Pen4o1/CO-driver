@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AddressSearch } from '@/features/geocoding/AddressSearch';
 import { getCurrentLatLng } from '@/features/maps/currentLocation';
 import { useRouteDraft } from '@/state/routeDraft';
 import { Button } from '@/ui/Button';
-import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { colors, space, type } from '@/ui/theme';
 
@@ -13,7 +12,7 @@ function formatPoint(
   label: string | null,
   point: { lat: number; lng: number } | null,
 ) {
-  if (!point) return 'Not set';
+  if (!point) return 'Tap the map or search';
   if (label) return label;
   return `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}`;
 }
@@ -35,7 +34,7 @@ export function PinsStep() {
   const [locating, setLocating] = useState(false);
 
   return (
-    <Card style={styles.panel}>
+    <View style={styles.panel}>
       <View style={styles.row}>
         <Chip
           label="A → B"
@@ -49,6 +48,13 @@ export function PinsStep() {
         />
       </View>
       <AddressSearch
+        placeholder={
+          mode === 'loop'
+            ? 'Search a start place'
+            : activePin === 'end'
+              ? 'Search the finish'
+              : 'Search the start'
+        }
         onPick={(hit) => {
           if (activePin === 'start' || mode === 'loop') {
             setStart({ lat: hit.lat, lng: hit.lng }, hit.label);
@@ -58,21 +64,30 @@ export function PinsStep() {
           }
         }}
       />
-      <View style={styles.row}>
-        <Chip
-          label={`Start · ${formatPoint(startLabel, start)}`}
-          selected={activePin === 'start'}
-          onPress={() => setActivePin('start')}
-        />
-        {mode === 'ab' ? (
-          <Chip
-            label={`End · ${formatPoint(endLabel, end)}`}
-            selected={activePin === 'end'}
-            onPress={() => setActivePin('end')}
-          />
-        ) : null}
-      </View>
-      {mode === 'loop' ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Set start pin"
+        onPress={() => setActivePin('start')}
+        style={[styles.pin, activePin === 'start' && styles.pinActive]}
+      >
+        <Text style={styles.pinKind}>Start</Text>
+        <Text numberOfLines={1} style={styles.pinValue}>
+          {formatPoint(startLabel, start)}
+        </Text>
+      </Pressable>
+      {mode === 'ab' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Set end pin"
+          onPress={() => setActivePin('end')}
+          style={[styles.pin, activePin === 'end' && styles.pinActive]}
+        >
+          <Text style={styles.pinKind}>Finish</Text>
+          <Text numberOfLines={1} style={styles.pinValue}>
+            {formatPoint(endLabel, end)}
+          </Text>
+        </Pressable>
+      ) : (
         <View style={styles.row}>
           {([30, 60, 100] as const).map((km) => (
             <Chip
@@ -83,9 +98,9 @@ export function PinsStep() {
             />
           ))}
         </View>
-      ) : null}
+      )}
       <Button
-        label="Use my location"
+        label={locating ? 'Locating…' : 'Use my location'}
         variant="secondary"
         disabled={locating}
         onPress={async () => {
@@ -100,15 +115,32 @@ export function PinsStep() {
           setActivePin('end');
         }}
       />
-      <Text style={styles.hint}>
-        Tap the map to drop the active pin. Drag a pin to move it.
-      </Text>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   panel: { gap: space.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  hint: { color: colors.muted, fontSize: type.caption },
+  pin: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    gap: 2,
+  },
+  pinActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  pinKind: {
+    color: colors.muted,
+    fontSize: type.caption,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  pinValue: { color: colors.text, fontSize: type.body },
 });

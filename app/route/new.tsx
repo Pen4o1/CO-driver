@@ -1,5 +1,13 @@
 import { useEffect } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PinsStep } from '@/features/routing/builder/PinsStep';
 import { ResultsStep } from '@/features/routing/builder/ResultsStep';
@@ -10,14 +18,18 @@ import { useRouteDraft } from '@/state/routeDraft';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
+import { Sheet } from '@/ui/Sheet';
 import { colors, space } from '@/ui/theme';
 
 export default function NewRouteScreen() {
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const start = useRouteDraft((s) => s.start);
   const end = useRouteDraft((s) => s.end);
   const step = useRouteDraft((s) => s.step);
   const mode = useRouteDraft((s) => s.mode);
   const candidate = useRouteDraft((s) => s.candidate);
+  const candidates = useRouteDraft((s) => s.candidates);
   const errorMessage = useRouteDraft((s) => s.errorMessage);
   const isRouting = useRouteDraft((s) => s.isRouting);
   const setStart = useRouteDraft((s) => s.setStart);
@@ -57,57 +69,79 @@ export default function NewRouteScreen() {
         onEndChange={(point) => setEnd(point)}
         onMapPress={step === 1 ? placeOnMap : undefined}
       />
-      <View style={styles.overlay} pointerEvents="box-none">
+      <View
+        pointerEvents="box-none"
+        style={[styles.top, { paddingTop: insets.top + space.xs }]}
+      >
         <View style={styles.steps}>
+          <Chip label="Pins" selected={step === 1} onPress={() => setStep(1)} />
           <Chip
-            label="1 Pins"
-            selected={step === 1}
-            onPress={() => setStep(1)}
-          />
-          <Chip
-            label="2 Style"
+            label="Style"
             selected={step === 2}
             onPress={() => canContinuePins && setStep(2)}
           />
           <Chip
-            label="3 Results"
+            label="Routes"
             selected={step === 3}
-            onPress={() => undefined}
+            onPress={() => candidates.length > 0 && setStep(3)}
           />
         </View>
-        {step === 1 ? <PinsStep /> : null}
-        {step === 2 ? <StyleStep /> : null}
-        {step === 3 ? <ResultsStep /> : null}
-        {step === 1 ? (
-          <Button
-            label="Next · style"
-            disabled={!canContinuePins}
-            onPress={() => setStep(2)}
-          />
-        ) : null}
-        {step === 2 ? (
-          <Button
-            label={isRouting ? 'Generating…' : 'Find routes'}
-            disabled={isRouting}
-            onPress={() => {
-              void runCandidateSearch();
-            }}
-          />
-        ) : null}
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       </View>
+      <KeyboardAvoidingView
+        pointerEvents="box-none"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={[
+          styles.bottom,
+          { paddingBottom: Math.max(insets.bottom, space.sm) },
+        ]}
+      >
+        <Sheet
+          maxHeight={height * (step === 3 ? 0.5 : 0.44)}
+          footer={
+            <>
+              {errorMessage ? (
+                <Text style={styles.error}>{errorMessage}</Text>
+              ) : null}
+              {step === 1 ? (
+                <Button
+                  label="Next · style"
+                  disabled={!canContinuePins}
+                  onPress={() => setStep(2)}
+                />
+              ) : null}
+              {step === 2 ? (
+                <Button
+                  label={isRouting ? 'Generating…' : 'Find routes'}
+                  disabled={isRouting}
+                  onPress={() => {
+                    void runCandidateSearch();
+                  }}
+                />
+              ) : null}
+            </>
+          }
+        >
+          {step === 1 ? <PinsStep /> : null}
+          {step === 2 ? <StyleStep /> : null}
+          {step === 3 ? <ResultsStep /> : null}
+        </Sheet>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  overlay: {
+  top: {
     position: 'absolute',
     left: space.sm,
     right: space.sm,
-    top: space.sm,
-    gap: space.sm,
+  },
+  bottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   steps: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   error: { color: colors.danger },

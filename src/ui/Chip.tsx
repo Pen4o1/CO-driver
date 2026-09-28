@@ -16,7 +16,11 @@ export function Chip({ label, selected, onPress }: Props) {
       onPress={onPress}
       style={[styles.chip, selected && styles.selected]}
     >
-      <Text style={[styles.text, selected && styles.textSelected]}>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={[styles.text, selected && styles.textSelected]}
+      >
         {label}
       </Text>
     </Pressable>

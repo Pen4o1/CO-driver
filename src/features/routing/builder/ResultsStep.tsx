@@ -18,20 +18,31 @@ export function ResultsStep() {
   const endLabel = useRouteDraft((s) => s.endLabel);
   const mode = useRouteDraft((s) => s.mode);
   const loopDistanceKm = useRouteDraft((s) => s.loopDistanceKm);
+  const setStep = useRouteDraft((s) => s.setStep);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   if (candidates.length === 0) {
     return (
-      <Text style={styles.hint}>No candidates yet. Go back and generate.</Text>
+      <View style={styles.wrap}>
+        <Text style={styles.hint}>No candidates yet.</Text>
+        <Button
+          label="Back to style"
+          variant="secondary"
+          onPress={() => setStep(2)}
+        />
+      </View>
     );
   }
 
   return (
     <View style={styles.wrap}>
+      <Text style={styles.heading}>
+        {candidates.length} route{candidates.length === 1 ? '' : 's'}
+      </Text>
       <ScrollView
         horizontal
-        pagingEnabled={false}
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.carousel}
       >
@@ -80,6 +91,7 @@ export function ResultsStep() {
 
 const styles = StyleSheet.create({
   wrap: { gap: space.sm },
+  heading: { color: colors.text, fontWeight: '700', fontSize: type.body },
   carousel: { gap: space.sm, paddingVertical: space.xs },
   hint: { color: colors.muted, fontSize: type.caption },
   error: { color: colors.danger },

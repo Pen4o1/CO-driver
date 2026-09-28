@@ -1,8 +1,21 @@
 import { appError } from '@/core/errors';
-import { buildRouteGeometry, resamplePolyline } from '@/core/geo';
+import {
+  buildRouteGeometry,
+  destinationPoint,
+  resamplePolyline,
+} from '@/core/geo';
 import { emptyBreakdown } from '@/core/routing';
 import type { RouteRequest, RoutingProvider } from '@/core/routing';
 import type { LatLng, RouteCandidate, RouteGeometry } from '@/core/types';
+
+function loopCoords(start: LatLng, lengthM: number, seed: number): LatLng[] {
+  const radiusM = lengthM / (2 * Math.PI);
+  const offsetDeg = seed * 40;
+  const via = [0, 90, 180, 270].map((bearing) =>
+    destinationPoint(start, bearing + offsetDeg, radiusM),
+  );
+  return resamplePolyline([start, ...via, start], 200);
+}
 
 function straightCandidate(
   waypoints: LatLng[],
@@ -45,6 +58,15 @@ export function createMockProvider(): RoutingProvider {
   return {
     id: 'mock',
     async route(req: RouteRequest) {
+      if (req.roundTrip && req.waypoints.length >= 1) {
+        const start = req.waypoints[0];
+        return [
+          straightCandidate(
+            loopCoords(start, req.roundTrip.lengthM, req.roundTrip.seed),
+            req.profileId,
+          ),
+        ];
+      }
       if (req.waypoints.length < 2) {
         throw appError('no-route', 'Need a start and an end pin.');
       }

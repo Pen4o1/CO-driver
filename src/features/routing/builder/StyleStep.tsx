@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { BUILTIN_PROFILES } from '@/core/routing';
 import { useRouteDraft } from '@/state/routeDraft';
-import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { Slider } from '@/ui/Slider';
 import { colors, space, type } from '@/ui/theme';
@@ -12,9 +11,12 @@ export function StyleStep() {
   const custom = useRouteDraft((s) => s.custom);
   const setProfileId = useRouteDraft((s) => s.setProfileId);
   const setCustom = useRouteDraft((s) => s.setCustom);
+  const description =
+    BUILTIN_PROFILES.find((p) => p.id === profileId)?.description ??
+    'Tune the sliders.';
 
   return (
-    <Card style={styles.panel}>
+    <View style={styles.panel}>
       <Text style={styles.heading}>Driving style</Text>
       <View style={styles.row}>
         {BUILTIN_PROFILES.map((profile) => (
@@ -31,10 +33,7 @@ export function StyleStep() {
           onPress={() => setProfileId('custom')}
         />
       </View>
-      <Text style={styles.hint}>
-        {BUILTIN_PROFILES.find((p) => p.id === profileId)?.description ??
-          'Tune the sliders.'}
-      </Text>
+      <Text style={styles.hint}>{description}</Text>
       {profileId === 'custom' ? (
         <View style={styles.sliders}>
           <Slider
@@ -98,7 +97,7 @@ export function StyleStep() {
           </View>
         </View>
       ) : null}
-    </Card>
+    </View>
   );
 }
 

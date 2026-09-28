@@ -22,4 +22,15 @@ describe('createMockProvider', () => {
     const geometry = await provider.match(waypoints);
     expect(geometry.coords).toEqual(waypoints);
   });
+
+  it('synthesizes a loop from a single start pin', async () => {
+    const provider = createMockProvider();
+    const [candidate] = await provider.route({
+      waypoints: [waypoints[0]],
+      profileId: 'twist',
+      roundTrip: { lengthM: 30_000, points: 4, seed: 1 },
+    });
+    expect(candidate.geometry.coords.length).toBeGreaterThan(4);
+    expect(candidate.geometry.coords[0]).toEqual(waypoints[0]);
+  });
 });
