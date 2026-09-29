@@ -25,6 +25,7 @@ import {
   waypointJobs,
   type Job,
 } from './candidateJobs';
+import { pickCountryLoops, preferCountryLoops } from './countryLoops';
 import { collectJobs } from './pool';
 import type { RoadSnapper } from './snap/osrmSnapper';
 
@@ -132,7 +133,10 @@ export async function generateCandidates(
       deps.mock,
     );
   } else if (input.mode === 'loop') {
-    jobs = loopJobs(input.start, profile, lengthM, deps.ors);
+    jobs = [
+      ...loopJobs(input.start, profile, lengthM, deps.ors),
+      ...loopViaJobs(input.start, profile, lengthM, deps.valhalla),
+    ];
   } else {
     if (!input.end) {
       throw appError('no-route', 'Need an end pin.');
@@ -152,34 +156,22 @@ export async function generateCandidates(
     throw appError('no-route', 'Need an end pin.');
   }
 
-  let { collected, errors } = await runAndCollect(
+  const { collected, errors } = await runAndCollect(
     jobs,
     concurrency,
     timeoutMs,
     deps.now,
   );
 
-  if (
-    collected.length === 0 &&
-    input.mode === 'loop' &&
-    input.preferId !== 'mock'
-  ) {
-    const fallback = loopViaJobs(input.start, profile, lengthM, deps.valhalla);
-    const retry = await runAndCollect(
-      fallback,
-      concurrency,
-      timeoutMs,
-      deps.now,
-    );
-    collected = retry.collected;
-    errors = errors.concat(retry.errors);
-  }
-
-  const filtered = dropUnpaved(uniquify(collected, profile.id), profile);
+  const paved = dropUnpaved(uniquify(collected, profile.id), profile);
+  const filtered = input.mode === 'loop' ? preferCountryLoops(paved) : paved;
   if (filtered.length === 0) {
     throw firstRoutingError(errors);
   }
   const deduped = dedupeCandidates(filtered);
   const scored = scoreCandidates(deduped, profile);
+  if (input.mode === 'loop') {
+    return pickCountryLoops(scored);
+  }
   return pickCandidates(scored, profile);
 }

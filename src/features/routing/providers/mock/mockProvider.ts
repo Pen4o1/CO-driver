@@ -49,6 +49,7 @@ function straightCandidate(
     roadShares: {
       motorwayShare: null,
       lowSpeedRoadShare: null,
+      streetShare: null,
       unpavedShare: null,
     },
   };

@@ -25,11 +25,19 @@ export function roadSharesFromOrsExtras(
       lengthM,
       (value) => (value & 1) === 1,
     ),
+    // Waytype 2 is secondary/tertiary/unclassified (country road), 5 is track.
+    // Waytype 3 is a city street — counted separately so loops can drop it.
     lowSpeedRoadShare: shareWhere(
       wayType?.values,
       cumulative,
       lengthM,
-      (value) => value === 3 || value === 5,
+      (value) => value === 2 || value === 5,
+    ),
+    streetShare: shareWhere(
+      wayType?.values,
+      cumulative,
+      lengthM,
+      (value) => value === 3,
     ),
     unpavedShare: shareWhere(surface?.values, cumulative, lengthM, (value) =>
       UNPAVED_SURFACE_IDS.has(value),

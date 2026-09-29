@@ -45,7 +45,9 @@ export function makeCandidate(input: {
   providerId?: string;
   motorwayShare?: number | null;
   lowSpeedRoadShare?: number | null;
+  streetShare?: number | null;
   unpavedShare?: number | null;
+  ascentM?: number | null;
   fastestDurationS?: number;
 }): RouteCandidate {
   const geometry = buildRouteGeometry(input.coords, null);
@@ -64,11 +66,12 @@ export function makeCandidate(input: {
     fastestDurationS: input.fastestDurationS ?? input.durationS,
     profileId: input.profileId ?? 'twist',
     waypointsUsed: [input.coords[0], input.coords[input.coords.length - 1]],
-    ascentM: null,
+    ascentM: input.ascentM ?? null,
     descentM: null,
     roadShares: {
       motorwayShare: input.motorwayShare ?? null,
       lowSpeedRoadShare: input.lowSpeedRoadShare ?? null,
+      streetShare: input.streetShare ?? null,
       unpavedShare: input.unpavedShare ?? null,
     },
   };

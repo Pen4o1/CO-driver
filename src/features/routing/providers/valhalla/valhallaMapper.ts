@@ -99,6 +99,7 @@ function roadSharesFromTrip(trip: ValhallaTrip): RoadShares {
   return {
     motorwayShare: flag === undefined ? null : flag ? 1 : 0,
     lowSpeedRoadShare: null,
+    streetShare: null,
     unpavedShare: null,
   };
 }

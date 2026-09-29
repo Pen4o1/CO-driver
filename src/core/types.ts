@@ -62,7 +62,10 @@ export type CurvinessBreakdown = {
 
 export type RoadShares = {
   motorwayShare: number | null;
+  /** Country road + track share. City streets are `streetShare`, not this. */
   lowSpeedRoadShare: number | null;
+  /** ORS waytype 3 (residential / living street / service). Null if unknown. */
+  streetShare: number | null;
   unpavedShare: number | null;
 };
 

@@ -37,6 +37,12 @@ export function valhallaRequestBody(
 ): Record<string, unknown> {
   const useHighways = numParam(req.providerParams, 'useHighways', 0.5);
   const useTrails = numParam(req.providerParams, 'useTrails', 0);
+  const useLivingStreets = numParam(
+    req.providerParams,
+    'useLivingStreets',
+    0.5,
+  );
+  const servicePenalty = numParam(req.providerParams, 'servicePenalty', 0);
   const twoPoint = req.waypoints.length === 2 && !req.roundTrip;
   return {
     locations: req.waypoints.map((p) => ({ lat: p.lat, lon: p.lng })),
@@ -45,6 +51,8 @@ export function valhallaRequestBody(
       motorcycle: {
         use_highways: useHighways,
         use_trails: useTrails,
+        use_living_streets: useLivingStreets,
+        ...(servicePenalty > 0 ? { service_penalty: servicePenalty } : {}),
       },
     },
     ...(twoPoint && req.alternatives ? { alternates: 2 } : {}),

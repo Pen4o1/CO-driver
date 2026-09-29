@@ -40,6 +40,34 @@ describe('createValhallaProvider', () => {
     expect(body.alternates).toBe(2);
   });
 
+  it('turns living streets off when a loop asks for country roads', async () => {
+    const fetchImpl: HttpGet = jest.fn(async () => jsonResponse(200, valhalla));
+    const provider = createValhallaProvider({ fetchImpl });
+    await provider.route({
+      waypoints,
+      profileId: 'twist',
+      providerParams: {
+        useHighways: 0,
+        useTrails: 0.25,
+        useLivingStreets: 0,
+        servicePenalty: 30,
+      },
+      alternatives: false,
+    });
+    const body = JSON.parse(
+      (fetchImpl as jest.Mock).mock.calls[0][1].body as string,
+    ) as {
+      costing_options: {
+        motorcycle: {
+          use_living_streets: number;
+          service_penalty: number;
+        };
+      };
+    };
+    expect(body.costing_options.motorcycle.use_living_streets).toBe(0);
+    expect(body.costing_options.motorcycle.service_penalty).toBe(30);
+  });
+
   it('match() posts /trace_route with map_snap (no network)', async () => {
     const fetchImpl: HttpGet = jest.fn(async () => jsonResponse(200, valhalla));
     const provider = createValhallaProvider({ fetchImpl });

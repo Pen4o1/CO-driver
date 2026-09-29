@@ -50,19 +50,38 @@ export function abJobs(
   ];
 }
 
+/**
+ * Loop searches should leave the street grid. Valhalla can down-rank living
+ * streets and service roads; ORS has no street-avoid flag, so those loops are
+ * filtered after they come back.
+ */
+export function countryLoopParams(
+  profile: RouteProfile,
+): Record<string, unknown> {
+  const highways = profile.providerParams.useHighways;
+  const capHighways = profile.id !== 'cruise' && typeof highways === 'number';
+  return {
+    ...profile.providerParams,
+    ...(capHighways ? { useHighways: Math.min(highways, 0.15) } : {}),
+    useLivingStreets: 0,
+    servicePenalty: 30,
+  };
+}
+
 export function loopJobs(
   start: LatLng,
   profile: RouteProfile,
   lengthM: number,
   ors: RoutingProvider,
 ): Job[] {
+  const providerParams = countryLoopParams(profile);
   return [1, 2, 3].map((seed) => ({
     label: `ors-loop-${seed}`,
     provider: ors,
     request: {
       waypoints: [start],
       profileId: profile.id,
-      providerParams: profile.providerParams,
+      providerParams,
       alternatives: false,
       roundTrip: { lengthM, points: 4, seed },
     },
@@ -70,10 +89,10 @@ export function loopJobs(
 }
 
 /**
- * Loop fallback when ORS round_trip fails.
- * Approximate lengthM as a circle of radius lengthM / 2π, then place four
- * vertices on that circle. Seed rotates the square so retries differ.
- * The router snaps to roads, so the driven length will not match exactly.
+ * Second loop search around the same radius. Valhalla snaps these vertices
+ * onto roads with living streets turned down, so a city-centre pin can still
+ * reach a country road. Seed rotates the square so the three tries differ.
+ * Driven length will not match lengthM exactly.
  */
 export function loopViaPoints(
   start: LatLng,
@@ -100,7 +119,7 @@ export function loopViaJobs(
     request: {
       waypoints: loopViaPoints(start, lengthM, seed),
       profileId: profile.id,
-      providerParams: profile.providerParams,
+      providerParams: countryLoopParams(profile),
       alternatives: false,
     },
   }));

@@ -88,16 +88,21 @@ export function PinsStep() {
           </Text>
         </Pressable>
       ) : (
-        <View style={styles.row}>
-          {([30, 60, 100] as const).map((km) => (
-            <Chip
-              key={km}
-              label={`${km} km`}
-              selected={loopDistanceKm === km}
-              onPress={() => setLoopDistanceKm(km)}
-            />
-          ))}
-        </View>
+        <>
+          <View style={styles.row}>
+            {([30, 60, 100] as const).map((km) => (
+              <Chip
+                key={km}
+                label={`${km} km`}
+                selected={loopDistanceKm === km}
+                onPress={() => setLoopDistanceKm(km)}
+              />
+            ))}
+          </View>
+          <Text style={styles.hint}>
+            Favours mountain and country roads around this pin.
+          </Text>
+        </>
       )}
       <Button
         label={locating ? 'Locating…' : 'Use my location'}
@@ -122,6 +127,7 @@ export function PinsStep() {
 const styles = StyleSheet.create({
   panel: { gap: space.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  hint: { color: colors.muted, fontSize: type.caption },
   pin: {
     minHeight: 44,
     borderRadius: 12,
