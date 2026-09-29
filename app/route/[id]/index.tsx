@@ -95,9 +95,16 @@ export default function RouteDetailsScreen() {
                   {name}
                 </Text>
                 <Text style={styles.body}>
-                  {formatDistanceKm(candidate.geometry.lengthM, units)} · score{' '}
-                  {Math.round(candidate.breakdown.score)}
+                  {formatDistanceKm(candidate.geometry.lengthM, units)}
+                  {candidate.providerId === 'gpx'
+                    ? ' · uploaded track'
+                    : ` · score ${Math.round(candidate.breakdown.score)}`}
                 </Text>
+                {candidate.providerId === 'gpx' ? (
+                  <Text style={styles.body}>
+                    Prepare voice, then open Recce to start the callouts.
+                  </Text>
+                ) : null}
               </View>
               <Button
                 label="Edit"

@@ -12,10 +12,11 @@
 - The **route** is real (routable roads, respect traffic laws).
 - The **pace notes** are derived from the road geometry, not from a human recce.
 - The **voice** is generated, not recorded.
+- A **GPX track** can be imported from Home. Pace notes are derived from that line the same way as a built route. The line is not snapped to the road network.
 
 **Target user:** motorcyclists and sports-car drivers who deliberately seek out good roads, and rally fans who want the experience outside a special stage.
 
-**Not:** a turn-by-turn navigation app, a lap timer, or a track tool.
+**Not:** a turn-by-turn navigation app or a lap timer.
 
 ### Safety & legality (must be implemented, not optional)
 - The app is a driving aid. It does not replace attention to the road.
@@ -49,6 +50,7 @@ src/core/                     PURE TypeScript. No React, no Expo, no native, no 
   scoring/                    curviness metrics + candidate ranking
   pacenotes/                  resample → detectCorners → grade → mergeJunctions →
                               buildNotes → filterNotes → script
+  tracks/                     GPX parse → RouteCandidate
   coach/                      timing.ts (lead distance), scheduler (pure state machine)
 
 src/features/                 Wiring: anything that touches React/Expo/network/native
@@ -57,6 +59,7 @@ src/features/                 Wiring: anything that touches React/Expo/network/n
   coach/                      useCoDriver (location loop), backgroundTask
   maps/                       MapView wrappers, route layers, grade heatmap, offline packs
   storage/                    SQLite schema + repositories
+  tracks/                     file picker + save imported GPX as a route
 
 src/ui/                       Design system: Button, Card, Chip, GradeBadge,
                               DirectionArrow, Sheet, ProgressRing

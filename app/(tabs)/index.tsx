@@ -12,6 +12,7 @@ import {
   type DriveHistoryRow,
   type RouteSummary,
 } from '@/features/storage';
+import { importGpxTrack } from '@/features/tracks/importGpx';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
@@ -21,6 +22,8 @@ export default function HomeScreen() {
   const units = useSettings((s) => s.unitSystem);
   const [routes, setRoutes] = useState<RouteSummary[]>([]);
   const [drives, setDrives] = useState<DriveHistoryRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     listRoutes()
@@ -41,9 +44,29 @@ export default function HomeScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Apex</Text>
       <Text style={styles.body}>
-        Build a road, pick how twisty, drive with pace notes.
+        Build a road, or upload a GPX track, then drive with pace notes.
       </Text>
       <Button label="New route" onPress={() => router.push('/route/new')} />
+      <Button
+        label={importing ? 'Opening…' : 'Upload GPX'}
+        variant="secondary"
+        disabled={importing}
+        onPress={() => {
+          setImporting(true);
+          setImportError(null);
+          void importGpxTrack()
+            .then((id) => {
+              if (id) router.push(`/route/${id}`);
+            })
+            .catch((caught: unknown) => {
+              setImportError(
+                caught instanceof Error ? caught.message : 'Upload failed',
+              );
+            })
+            .finally(() => setImporting(false));
+        }}
+      />
+      {importError ? <Text style={styles.error}>{importError}</Text> : null}
       <Text style={styles.heading}>Library · {routes.length}</Text>
       {routes.length === 0 ? (
         <Text style={styles.body}>No saved routes yet.</Text>
@@ -104,5 +127,6 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
   body: { color: colors.muted },
+  error: { color: colors.danger },
   meta: { color: colors.muted, fontSize: type.caption },
 });
