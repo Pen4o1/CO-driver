@@ -63,3 +63,39 @@ export async function currentFix(): Promise<Location.LocationObject | null> {
     return Location.getLastKnownPositionAsync();
   }
 }
+
+/** Recent fix only. A stale last-known position must not look like a live recce fix. */
+export async function lastKnownFix(): Promise<Location.LocationObject | null> {
+  try {
+    return await Location.getLastKnownPositionAsync({
+      maxAge: 20_000,
+      requiredAccuracy: 100,
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Checklist watch. Distance interval 0 so accuracy can improve while the
+ * phone is still — the drive watch waits for movement.
+ */
+export async function watchRecceFix(
+  onFix: (location: Location.LocationObject) => void,
+): Promise<Location.LocationSubscription | null> {
+  const current = await Location.getForegroundPermissionsAsync();
+  let status = current.status;
+  if (status !== 'granted') {
+    const asked = await Location.requestForegroundPermissionsAsync();
+    status = asked.status;
+  }
+  if (status !== 'granted') return null;
+  return Location.watchPositionAsync(
+    {
+      accuracy: Location.Accuracy.BestForNavigation,
+      distanceInterval: 0,
+      timeInterval: 1000,
+    },
+    onFix,
+  );
+}

@@ -1,13 +1,12 @@
-import * as Battery from 'expo-battery';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SAFETY_DISCLAIMER_BG_EU } from '@/core/safety';
-import { currentFix, gpsBand } from '@/features/coach';
-import { loadDriveBundle } from '@/features/coach/loadDriveBundle';
-import { acceptDisclaimer, disclaimerAccepted } from '@/features/storage';
+import { canStartDrive } from '@/features/coach/recceGate';
+import { useRecceSnapshot } from '@/features/coach/useRecceSnapshot';
+import { acceptDisclaimer } from '@/features/storage';
 import { Button } from '@/ui/Button';
 import { colors, space, type } from '@/ui/theme';
 
@@ -23,71 +22,55 @@ export default function RecceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [gps, setGps] = useState<Tone>('poor');
-  const [accuracyM, setAccuracyM] = useState<number | null>(null);
-  const [battery, setBattery] = useState<number | null>(null);
-  const [clips, setClips] = useState({ ready: 0, notes: 0 });
-  const [legal, setLegal] = useState(false);
+  const routeId = typeof id === 'string' ? id : undefined;
+  const {
+    gps,
+    accuracyM,
+    battery,
+    clips,
+    legal,
+    setLegal,
+    loadError,
+    observe,
+  } = useRecceSnapshot(routeId);
   const [error, setError] = useState<string | null>(null);
+  useFocusEffect(observe);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const accepted = await disclaimerAccepted();
-      if (!cancelled) setLegal(accepted);
-      const fix = await currentFix();
-      if (fix && !cancelled) {
-        const acc = fix.coords.accuracy ?? 999;
-        setAccuracyM(acc);
-        setGps(gpsBand(acc));
-      }
-      try {
-        const level = await Battery.getBatteryLevelAsync();
-        if (!cancelled && level >= 0) setBattery(Math.round(level * 100));
-      } catch {
-        if (!cancelled) setBattery(null);
-      }
-      if (id) {
-        const bundle = await loadDriveBundle(id);
-        if (!cancelled && bundle) {
-          setClips({ ready: bundle.clipCount, notes: bundle.notes.length });
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const { enabled: canStart, clipsMissing } = canStartDrive({ legal, clips });
+  const needed = clips?.needed ?? 0;
+  const ready = clips?.ready ?? 0;
 
-  const start = async () => {
-    if (!legal) {
-      await acceptDisclaimer();
-      setLegal(true);
-    }
-    if (!id) {
+  const start = () => {
+    if (!canStart) return;
+    if (!routeId) {
       setError('Missing route');
       return;
     }
-    router.replace(`/drive/${id}`);
+    router.replace(`/drive/${routeId}`);
   };
 
-  const clipsReady = clips.notes > 0 && clips.ready >= clips.notes;
+  const openPrepare = () => {
+    if (!routeId) return;
+    router.push(`/route/${routeId}/prepare`);
+  };
+
   const clipsTone: Tone =
-    clips.notes === 0
+    !clips || needed === 0
       ? 'ok'
-      : clipsReady
-        ? 'good'
-        : clips.ready === 0
+      : clipsMissing
+        ? ready === 0
           ? 'poor'
-          : 'ok';
+          : 'ok'
+        : 'good';
   const batteryTone: Tone =
     battery === null ? 'ok' : battery < 20 ? 'poor' : 'good';
-
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.lead}>
-          Check the fix, the clips, and the battery. Then start.
+          {clipsMissing
+            ? 'Prepare voice before START.'
+            : 'Check the fix, the clips, and the battery. Then start.'}
         </Text>
         <Check
           label="GPS"
@@ -101,13 +84,15 @@ export default function RecceScreen() {
         />
         <Check
           label="Voice clips"
-          value={`${clips.ready} / ${clips.notes}`}
+          value={clips ? `${ready} / ${needed}` : '…'}
           detail={
-            clips.notes === 0
-              ? 'No notes on this route'
-              : clipsReady
-                ? 'Cached for offline'
-                : 'Prepare voice before you roll'
+            !clips
+              ? 'Checking clips'
+              : needed === 0
+                ? 'No notes on this route'
+                : clipsMissing
+                  ? 'Prepare voice before you roll'
+                  : 'Cached for offline'
           }
           tone={clipsTone}
         />
@@ -141,7 +126,9 @@ export default function RecceScreen() {
             tone="good"
           />
         )}
-        {error ? <Text style={styles.err}>{error}</Text> : null}
+        {error || loadError ? (
+          <Text style={styles.err}>{error ?? loadError}</Text>
+        ) : null}
       </ScrollView>
       <View
         style={[
@@ -149,17 +136,38 @@ export default function RecceScreen() {
           { paddingBottom: Math.max(insets.bottom, space.md) },
         ]}
       >
-        <Button
-          label="Prepare voice"
-          variant="secondary"
-          onPress={() => router.push(`/route/${id}/prepare`)}
-        />
-        <Button
-          label="START"
-          onPress={() => void start()}
-          disabled={!legal}
-          style={styles.start}
-        />
+        {clipsMissing ? (
+          <>
+            <Button
+              label="START"
+              variant="secondary"
+              disabled
+              accessibilityHint="Prepare voice before you roll"
+            />
+            <Button
+              label="Prepare voice"
+              onPress={openPrepare}
+              style={styles.start}
+            />
+          </>
+        ) : (
+          <>
+            <Button
+              label="Prepare voice"
+              variant="secondary"
+              onPress={openPrepare}
+            />
+            <Button
+              label="START"
+              onPress={start}
+              disabled={!canStart}
+              accessibilityHint={
+                legal ? undefined : 'Acknowledge the safety disclaimer'
+              }
+              style={styles.start}
+            />
+          </>
+        )}
       </View>
     </View>
   );
