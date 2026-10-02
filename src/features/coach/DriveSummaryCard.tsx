@@ -2,18 +2,39 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { DriveStats } from '@/core/coach';
 import type { RouteGeometry } from '@/core/types';
+import {
+  formatDistanceKm,
+  formatDuration,
+  formatSpeed,
+  type UnitSystem,
+} from '@/core/units';
 import { RouteMap } from '@/features/maps/RouteMap';
 import { colors, space, type } from '@/ui/theme';
 
 type Props = {
   geometry: RouteGeometry | null;
   stats: DriveStats;
+  units: UnitSystem;
 };
 
-export function DriveSummaryCard({ geometry, stats }: Props) {
-  const km = (stats.distanceM / 1000).toFixed(1);
-  const mins = Math.round(stats.durationS / 60);
-  const avg = Math.round(stats.avgSpeedMps * 3.6);
+function speedLabel(speedMps: number | undefined, units: UnitSystem): string {
+  if (speedMps == null || !Number.isFinite(speedMps) || speedMps <= 0) {
+    return '—';
+  }
+  return formatSpeed(speedMps, units);
+}
+
+export function DriveSummaryCard({ geometry, stats, units }: Props) {
+  const movingAvg =
+    stats.movingTimeS > 0 ? stats.distanceM / stats.movingTimeS : 0;
+  const cells: { label: string; value: string }[] = [
+    { label: 'Distance', value: formatDistanceKm(stats.distanceM, units) },
+    { label: 'Time', value: formatDuration(stats.durationS) },
+    { label: 'Avg speed', value: speedLabel(stats.avgSpeedMps, units) },
+    { label: 'Max speed', value: speedLabel(stats.maxSpeedMps, units) },
+    { label: 'Moving', value: formatDuration(stats.movingTimeS) },
+    { label: 'Moving avg', value: speedLabel(movingAvg, units) },
+  ];
   return (
     <View style={styles.wrap}>
       {geometry ? (
@@ -27,10 +48,15 @@ export function DriveSummaryCard({ geometry, stats }: Props) {
           />
         </View>
       ) : null}
-      <Text style={styles.title}>
-        {km} km · {mins} min · {avg} km/h
-      </Text>
-      <Text style={styles.body}>Hairpins hit {stats.hairpinsHit}</Text>
+      <View style={styles.grid}>
+        {cells.map((cell) => (
+          <View key={cell.label} style={styles.cell}>
+            <Text style={styles.cellLabel}>{cell.label}</Text>
+            <Text style={styles.cellValue}>{cell.value}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.body}>Hairpins {stats.hairpinsHit}</Text>
       <Text style={styles.body}>
         Grades{' '}
         {([1, 2, 3, 4, 5, 6] as const)
@@ -44,6 +70,22 @@ export function DriveSummaryCard({ geometry, stats }: Props) {
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
   map: { height: 220, borderRadius: 16, overflow: 'hidden' },
-  title: { color: colors.text, fontSize: type.title, fontWeight: '800' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  cell: {
+    flexGrow: 1,
+    flexBasis: '46%',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+    gap: 2,
+  },
+  cellLabel: {
+    color: colors.muted,
+    fontSize: type.caption,
+    fontWeight: '700',
+  },
+  cellValue: { color: colors.text, fontSize: type.body, fontWeight: '800' },
   body: { color: colors.muted, fontSize: type.body },
 });

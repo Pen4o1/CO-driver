@@ -1,5 +1,6 @@
 import {
   formatDistanceKm,
+  formatDuration,
   formatLengthM,
   formatSpeed,
   metresToMiles,
@@ -11,6 +12,12 @@ describe('units', () => {
     expect(formatDistanceKm(1609.344, 'imperial')).toBe('1.0 mi');
     expect(formatLengthM(150, 'metric')).toBe('150 m');
     expect(formatLengthM(91.44, 'imperial')).toBe('100 yd');
+  });
+
+  it('formats duration', () => {
+    expect(formatDuration(45)).toBe('45s');
+    expect(formatDuration(90)).toBe('1m 30s');
+    expect(formatDuration(3720)).toBe('1h 2m');
   });
 
   it('formats speed', () => {

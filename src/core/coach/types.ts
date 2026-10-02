@@ -82,6 +82,10 @@ export type EngineState = EngineConfig & {
   lastFix: GeoFix | null;
   callLog: CallLogEntry[];
   paused: boolean;
+  /** Fastest trustworthy GPS speed seen on this drive. */
+  maxSpeedMps: number;
+  /** Time spent moving, from GPS samples. */
+  movingMs: number;
 };
 
 export type DriveStats = {
@@ -90,5 +94,8 @@ export type DriveStats = {
   movingTimeS: number;
   cornersByGrade: Record<1 | 2 | 3 | 4 | 5 | 6, number>;
   hairpinsHit: number;
+  /** Distance divided by elapsed time, including stops. */
   avgSpeedMps: number;
+  /** Peak GPS speed. Missing on drives recorded before this field existed. */
+  maxSpeedMps?: number;
 };

@@ -29,6 +29,16 @@ export function formatLengthM(distanceM: number, units: UnitSystem): string {
   return `${Math.round(distanceM)} m`;
 }
 
+export function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remain = total % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return remain > 0 ? `${minutes}m ${remain}s` : `${minutes}m`;
+  return `${remain}s`;
+}
+
 export function formatSpeed(speedMps: number, units: UnitSystem): string {
   if (units === 'imperial') {
     return `${Math.round(speedMps * 2.236936)} mph`;

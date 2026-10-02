@@ -3,7 +3,13 @@ export type {
   SynthesizeOpts,
   TtsProvider,
   Voice,
+  VoiceQuality,
 } from './TtsProvider';
+export {
+  classifyDeviceVoice,
+  sortVoicesForPicker,
+  voiceQualityLabel,
+} from './deviceVoices';
 export { createDeviceTtsProvider } from './DeviceTtsProvider';
 export { createCloudTtsProvider } from './CloudTtsProvider';
 export { createTtsProvider, readTtsEnv, resolveTtsProvider } from './registry';

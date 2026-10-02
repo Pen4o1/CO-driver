@@ -1,8 +1,12 @@
+export type VoiceQuality = 'default' | 'enhanced' | 'premium';
+
 export type Voice = {
   id: string;
   name: string;
   language: string;
   offline: boolean;
+  /** Device TTS only. Premium and Enhanced are the voices downloaded in iOS Settings. */
+  quality?: VoiceQuality;
 };
 
 export type LocalFile = {

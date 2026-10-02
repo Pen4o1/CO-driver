@@ -1,5 +1,6 @@
 export {
   formatDistanceKm,
+  formatDuration,
   formatLengthM,
   formatSpeed,
   metresToKm,

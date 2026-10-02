@@ -7,6 +7,7 @@ import type { DriveStats } from '@/core/coach';
 import type { RouteGeometry } from '@/core/types';
 import { DriveSummaryCard } from '@/features/coach/DriveSummaryCard';
 import { getDrive, getRoute } from '@/features/storage';
+import { useSettings } from '@/state/settings';
 import { NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
 
@@ -22,6 +23,7 @@ const EMPTY: DriveStats = {
 export default function DriveSummaryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const units = useSettings((s) => s.unitSystem);
   const { id, driveId } = useLocalSearchParams<{
     id: string;
     driveId?: string;
@@ -55,7 +57,7 @@ export default function DriveSummaryScreen() {
       ]}
     >
       <Text style={styles.kicker}>Drive summary</Text>
-      <DriveSummaryCard geometry={geometry} stats={stats} />
+      <DriveSummaryCard geometry={geometry} stats={stats} units={units} />
       <NavRow
         onBack={() => router.replace(routeId ? `/route/${routeId}` : '/')}
         backLabel="Route"

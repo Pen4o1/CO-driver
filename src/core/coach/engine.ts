@@ -19,6 +19,7 @@ import {
 import { rearmFired, withFired } from './fired';
 import { nextOffRoute } from './offRoute';
 import { scheduleCalls } from './scheduler';
+import { nextMotion } from './stats';
 import { DEFAULT_TIMING } from './timing';
 import type {
   EngineConfig,
@@ -42,6 +43,8 @@ export function createEngineState(config: EngineConfig): EngineState {
     lastFix: null,
     callLog: [],
     paused: false,
+    maxSpeedMps: 0,
+    movingMs: 0,
   };
 }
 
@@ -190,6 +193,7 @@ export function updateEngine(
     status = 'finished';
   }
 
+  const motion = nextMotion(state, fix, nowMs);
   const next: EngineState = {
     ...state,
     status,
@@ -203,6 +207,8 @@ export function updateEngine(
     offRouteSinceMs: off.sinceMs,
     lastFix: fix,
     callLog,
+    maxSpeedMps: motion.maxSpeedMps,
+    movingMs: motion.movingMs,
   };
 
   return {

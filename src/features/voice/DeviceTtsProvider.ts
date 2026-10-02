@@ -1,5 +1,6 @@
 import { LIVE_CLIP_URI, speakLikeCoDriver } from '@/core/voice';
 
+import { classifyDeviceVoice, sortVoicesForPicker } from './deviceVoices';
 import type {
   LocalFile,
   SynthesizeOpts,
@@ -9,7 +10,12 @@ import type {
 
 export type DeviceSpeechApi = {
   getAvailableVoicesAsync(): Promise<
-    { identifier: string; name: string; language: string }[]
+    {
+      identifier: string;
+      name: string;
+      language: string;
+      quality?: string;
+    }[]
   >;
   speak(
     text: string,
@@ -48,12 +54,18 @@ export function createDeviceTtsProvider(
           },
         ];
       }
-      return voices.map((voice) => ({
-        id: voice.identifier,
-        name: voice.name,
-        language: voice.language,
-        offline: true,
-      }));
+      return sortVoicesForPicker(
+        voices.map((voice) => ({
+          id: voice.identifier,
+          name: voice.name,
+          language: voice.language,
+          offline: true,
+          quality: classifyDeviceVoice({
+            identifier: voice.identifier,
+            quality: voice.quality,
+          }),
+        })),
+      );
     },
     async synthesize(
       text: string,
