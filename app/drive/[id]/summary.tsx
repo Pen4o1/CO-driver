@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { DriveStats } from '@/core/coach';
 import type { RouteGeometry } from '@/core/types';
 import { DriveSummaryCard } from '@/features/coach/DriveSummaryCard';
 import { getDrive, getRoute } from '@/features/storage';
-import { Button } from '@/ui/Button';
+import { NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
 
 const EMPTY: DriveStats = {
@@ -20,6 +21,7 @@ const EMPTY: DriveStats = {
 
 export default function DriveSummaryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id, driveId } = useLocalSearchParams<{
     id: string;
     driveId?: string;
@@ -43,11 +45,23 @@ export default function DriveSummaryScreen() {
     };
   }, [id, driveId]);
 
+  const routeId = typeof id === 'string' ? id : '';
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, space.lg) },
+      ]}
+    >
       <Text style={styles.kicker}>Drive summary</Text>
       <DriveSummaryCard geometry={geometry} stats={stats} />
-      <Button label="Home" onPress={() => router.replace('/')} />
+      <NavRow
+        onBack={() => router.replace(routeId ? `/route/${routeId}` : '/')}
+        backLabel="Route"
+        onForward={() => router.replace('/')}
+        forwardLabel="Home"
+      />
     </View>
   );
 }

@@ -42,7 +42,7 @@ export const type = {
   hud: 28,
 } as const;
 
-/** Shared stack chrome. Back control is the chevron only, so it never shows a route segment. */
+/** Shared stack chrome. Screens add a chevron via `stackScreenOptions`. */
 export const stackHeader = {
   headerStyle: { backgroundColor: colors.bg },
   headerTintColor: colors.text,

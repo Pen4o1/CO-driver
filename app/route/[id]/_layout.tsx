@@ -1,13 +1,13 @@
 import { Stack } from 'expo-router';
 
-import { stackHeader } from '@/ui/theme';
+import { stackScreenOptions } from '@/ui/navigation';
 
 export default function RouteIdLayout() {
   return (
-    <Stack screenOptions={stackHeader}>
+    <Stack screenOptions={stackScreenOptions}>
       <Stack.Screen name="index" options={{ title: 'Route' }} />
       <Stack.Screen name="edit" options={{ title: 'Edit route' }} />
-      <Stack.Screen name="recce" options={{ title: 'Recce' }} />
+      <Stack.Screen name="recce" options={{ title: 'Checklist' }} />
       <Stack.Screen name="prepare" options={{ title: 'Prepare voice' }} />
     </Stack>
   );

@@ -8,6 +8,7 @@ import { canStartDrive } from '@/features/coach/recceGate';
 import { useRecceSnapshot } from '@/features/coach/useRecceSnapshot';
 import { acceptDisclaimer } from '@/features/storage';
 import { Button } from '@/ui/Button';
+import { leave, NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
 
 type Tone = 'good' | 'ok' | 'poor';
@@ -69,8 +70,8 @@ export default function RecceScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.lead}>
           {clipsMissing
-            ? 'Prepare voice before START.'
-            : 'Check the fix, the clips, and the battery. Then start.'}
+            ? 'Voice is not ready yet. Prepare it, or go back to the route.'
+            : 'Check the fix, the clips, and the battery. Start begins the drive.'}
         </Text>
         <Check
           label="GPS"
@@ -136,38 +137,15 @@ export default function RecceScreen() {
           { paddingBottom: Math.max(insets.bottom, space.md) },
         ]}
       >
-        {clipsMissing ? (
-          <>
-            <Button
-              label="START"
-              variant="secondary"
-              disabled
-              accessibilityHint="Prepare voice before you roll"
-            />
-            <Button
-              label="Prepare voice"
-              onPress={openPrepare}
-              style={styles.start}
-            />
-          </>
-        ) : (
-          <>
-            <Button
-              label="Prepare voice"
-              variant="secondary"
-              onPress={openPrepare}
-            />
-            <Button
-              label="START"
-              onPress={start}
-              disabled={!canStart}
-              accessibilityHint={
-                legal ? undefined : 'Acknowledge the safety disclaimer'
-              }
-              style={styles.start}
-            />
-          </>
-        )}
+        {!clipsMissing ? (
+          <Button label="Prepare voice" variant="ghost" onPress={openPrepare} />
+        ) : null}
+        <NavRow
+          onBack={() => leave(router)}
+          onForward={clipsMissing ? openPrepare : start}
+          forwardLabel={clipsMissing ? 'Prepare voice' : 'Start'}
+          forwardDisabled={clipsMissing ? !routeId : !canStart}
+        />
       </View>
     </View>
   );
@@ -246,5 +224,4 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.bg,
   },
-  start: { minHeight: 64 },
 });

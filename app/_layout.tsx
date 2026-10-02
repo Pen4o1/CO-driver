@@ -11,7 +11,7 @@ import {
 import { disclaimerAccepted } from '@/features/storage';
 import { configureCoDriverAudio } from '@/features/voice';
 import '@/features/coach/backgroundTask';
-import { stackHeader } from '@/ui/theme';
+import { stackScreenOptions } from '@/ui/navigation';
 
 export default function RootLayout() {
   const [booted, setBooted] = useState(false);
@@ -53,7 +53,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack screenOptions={stackHeader}>
+      <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen
           name="(tabs)"
           options={{ headerShown: false, title: 'Home' }}

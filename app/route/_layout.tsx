@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
 
-import { stackHeader } from '@/ui/theme';
+import { stackScreenOptions } from '@/ui/navigation';
 
 export default function RouteLayout() {
   return (
-    <Stack screenOptions={stackHeader}>
+    <Stack screenOptions={stackScreenOptions}>
       <Stack.Screen name="new" options={{ title: 'New route' }} />
       <Stack.Screen
         name="[id]"

@@ -81,6 +81,7 @@ export function OfflinePackCard({ routeId, bbox }: Props) {
       {error ? <Text style={styles.err}>{error}</Text> : null}
       <Button
         label={busy ? 'Downloading…' : 'Download offline pack'}
+        variant="secondary"
         onPress={() => void download()}
         disabled={locked || busy}
       />

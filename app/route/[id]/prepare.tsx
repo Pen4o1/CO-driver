@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_NOTE_FILTER, derivePaceNotesDetailed } from '@/core/pacenotes';
 import { formatBytes, planRouteClips } from '@/core/voice';
@@ -14,10 +15,12 @@ import {
 import { getDb, getRoute, saveVoicePrepare } from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
+import { leave, NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
 
 export default function PrepareScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const ttsProviderId = useSettings((s) => s.ttsProviderId);
   const voiceId = useSettings((s) => s.voiceId);
@@ -117,56 +120,75 @@ export default function PrepareScreen() {
   const ratio =
     progress && progress.total > 0 ? progress.done / progress.total : 0;
 
+  const routeId = typeof id === 'string' ? id : '';
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Prepare voice</Text>
-      <Text style={styles.body}>{name}</Text>
-      <Text style={styles.hint}>
-        {noteCount} unique calls across chain-radius 0 / 60 / 200 m. Estimated{' '}
-        {formatBytes(estimate)}.
-      </Text>
-      <Text style={styles.hint}>{provider.description}</Text>
-      {progress ? (
-        <View style={styles.barTrack}>
-          <View style={[styles.barFill, { width: `${ratio * 100}%` }]} />
-        </View>
-      ) : null}
-      <Text style={styles.body}>
-        {busy && progress
-          ? `Recording pacenotes… ${progress.done}/${progress.total}`
-          : doneBytes !== null
-            ? liveMode
-              ? 'Prepared for live device TTS. Airplane-mode clips need Piper HTTP.'
-              : `Cached ${formatBytes(doneBytes)}. Drive plays clips only.`
-            : 'Notes are known before the drive. We render audio once, then only play clips.'}
-      </Text>
-      <Button
-        label={busy ? 'Recording…' : 'Prepare route'}
-        disabled={busy}
-        onPress={() => void runPrepare(false)}
-      />
-      <Button
-        label="Prepare later (device TTS)"
-        variant="secondary"
-        disabled={busy}
-        onPress={() => void runPrepare(true)}
-      />
-      <Button
-        label="Back to route"
-        variant="ghost"
-        onPress={() => router.back()}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </ScrollView>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Prepare voice</Text>
+        <Text style={styles.body}>{name}</Text>
+        <Text style={styles.hint}>
+          {noteCount} unique calls across chain-radius 0 / 60 / 200 m. Estimated{' '}
+          {formatBytes(estimate)}.
+        </Text>
+        <Text style={styles.hint}>{provider.description}</Text>
+        {progress ? (
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${ratio * 100}%` }]} />
+          </View>
+        ) : null}
+        <Text style={styles.body}>
+          {busy && progress
+            ? `Recording pacenotes… ${progress.done}/${progress.total}`
+            : doneBytes !== null
+              ? liveMode
+                ? 'Prepared for live device TTS. Airplane-mode clips need Piper HTTP.'
+                : `Cached ${formatBytes(doneBytes)}. Drive plays clips only.`
+              : 'Notes are known before the drive. We render audio once, then only play clips.'}
+        </Text>
+        <Button
+          label={busy ? 'Recording…' : 'Prepare route'}
+          disabled={busy}
+          onPress={() => void runPrepare(false)}
+        />
+        <Button
+          label="Prepare later (device TTS)"
+          variant="secondary"
+          disabled={busy}
+          onPress={() => void runPrepare(true)}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </ScrollView>
+      <View
+        style={[
+          styles.footer,
+          { paddingBottom: Math.max(insets.bottom, space.md) },
+        ]}
+      >
+        <NavRow
+          onBack={() => leave(router)}
+          onForward={() => router.navigate(`/route/${routeId}/recce`)}
+          forwardLabel="Checklist"
+          forwardDisabled={!routeId || busy}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
   container: {
     flexGrow: 1,
-    backgroundColor: colors.bg,
     padding: space.lg,
     gap: space.md,
+  },
+  footer: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
   },
   title: { color: colors.text, fontSize: type.title, fontWeight: '700' },
   body: { color: colors.text, fontSize: type.body },

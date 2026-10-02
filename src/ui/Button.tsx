@@ -36,6 +36,9 @@ export const Button = forwardRef<View, Props>(function Button(
       {...rest}
     >
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
         style={[
           styles.text,
           variant === 'secondary' && styles.textSecondary,

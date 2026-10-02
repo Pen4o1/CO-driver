@@ -10,6 +10,7 @@ import { RouteMap } from '@/features/maps/RouteMap';
 import { getRoute } from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
+import { leave, NavRow } from '@/ui/navigation';
 import { Sheet } from '@/ui/Sheet';
 import { colors, space, type } from '@/ui/theme';
 
@@ -49,17 +50,23 @@ export default function RouteDetailsScreen() {
 
   useFocusEffect(reload);
 
+  const routeId = typeof id === 'string' ? id : '';
+
   if (Platform.OS === 'web') {
     return (
       <View style={styles.fallback}>
         <Text style={styles.body}>
           Map preview needs the native dev client.
         </Text>
+        <NavRow
+          onBack={() => leave(router)}
+          onForward={() => router.push(`/route/${routeId}/recce`)}
+          forwardLabel="Checklist"
+          forwardDisabled={!routeId}
+        />
       </View>
     );
   }
-
-  const routeId = typeof id === 'string' ? id : '';
 
   return (
     <View style={styles.screen}>
@@ -78,6 +85,7 @@ export default function RouteDetailsScreen() {
         <View style={styles.fallback}>
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.body}>{error ?? 'Loading…'}</Text>
+          <NavRow onBack={() => leave(router)} />
         </View>
       )}
       {candidate ? (
@@ -88,40 +96,46 @@ export default function RouteDetailsScreen() {
             { paddingBottom: Math.max(insets.bottom, space.sm) },
           ]}
         >
-          <Sheet>
-            <View style={styles.head}>
-              <View style={styles.headText}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {name}
-                </Text>
-                <Text style={styles.body}>
-                  {formatDistanceKm(candidate.geometry.lengthM, units)}
-                  {candidate.providerId === 'gpx'
-                    ? ' · uploaded track'
-                    : ` · score ${Math.round(candidate.breakdown.score)}`}
-                </Text>
-                {candidate.providerId === 'gpx' ? (
-                  <Text style={styles.body}>
-                    Prepare voice, then open Recce to start the callouts.
-                  </Text>
-                ) : null}
-              </View>
+          <Sheet
+            maxHeight="68%"
+            footer={
+              <NavRow
+                onBack={() => leave(router)}
+                onForward={() => router.push(`/route/${routeId}/recce`)}
+                forwardLabel="Checklist"
+                forwardDisabled={!routeId}
+              />
+            }
+          >
+            <View style={styles.headText}>
+              <Text style={styles.title} numberOfLines={1}>
+                {name}
+              </Text>
+              <Text style={styles.body}>
+                {formatDistanceKm(candidate.geometry.lengthM, units)}
+                {candidate.providerId === 'gpx'
+                  ? ' · uploaded track'
+                  : ` · score ${Math.round(candidate.breakdown.score)}`}
+              </Text>
+              <Text style={styles.body}>
+                Checklist is the next step. It does not start the drive.
+              </Text>
+            </View>
+            <View style={styles.actions}>
               <Button
                 label="Edit"
-                variant="ghost"
+                variant="secondary"
                 accessibilityLabel="Edit route"
                 onPress={() => router.push(`/route/${routeId}/edit`)}
+                style={styles.action}
+              />
+              <Button
+                label="Prepare voice"
+                variant="secondary"
+                onPress={() => router.push(`/route/${routeId}/prepare`)}
+                style={styles.action}
               />
             </View>
-            <Button
-              label="Recce"
-              onPress={() => router.push(`/route/${routeId}/recce`)}
-            />
-            <Button
-              label="Prepare voice"
-              variant="secondary"
-              onPress={() => router.push(`/route/${routeId}/prepare`)}
-            />
             <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
           </Sheet>
         </View>
@@ -138,12 +152,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  headText: { flex: 1, gap: 2 },
+  headText: { gap: 2 },
+  actions: { flexDirection: 'row', gap: space.sm },
+  action: { flex: 1 },
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {
@@ -151,6 +162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: space.lg,
+    gap: space.md,
     backgroundColor: colors.bg,
   },
 });

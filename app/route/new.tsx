@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,14 +15,16 @@ import { ResultsStep } from '@/features/routing/builder/ResultsStep';
 import { StyleStep } from '@/features/routing/builder/StyleStep';
 import { runCandidateSearch } from '@/features/routing/runCandidateSearch';
 import { RouteMap } from '@/features/maps/RouteMap';
+import { saveRoute } from '@/features/storage';
 import { useRouteDraft } from '@/state/routeDraft';
 import { useSettings } from '@/state/settings';
-import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
+import { leave, NavRow } from '@/ui/navigation';
 import { Sheet } from '@/ui/Sheet';
 import { colors, space } from '@/ui/theme';
 
 export default function NewRouteScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const start = useRouteDraft((s) => s.start);
@@ -32,16 +35,39 @@ export default function NewRouteScreen() {
   const candidates = useRouteDraft((s) => s.candidates);
   const errorMessage = useRouteDraft((s) => s.errorMessage);
   const isRouting = useRouteDraft((s) => s.isRouting);
+  const startLabel = useRouteDraft((s) => s.startLabel);
+  const endLabel = useRouteDraft((s) => s.endLabel);
+  const loopDistanceKm = useRouteDraft((s) => s.loopDistanceKm);
   const setStart = useRouteDraft((s) => s.setStart);
   const setEnd = useRouteDraft((s) => s.setEnd);
   const setStep = useRouteDraft((s) => s.setStep);
   const placeOnMap = useRouteDraft((s) => s.placeOnMap);
   const setProfileId = useRouteDraft((s) => s.setProfileId);
   const defaultProfileId = useSettings((s) => s.defaultProfileId);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setProfileId(defaultProfileId);
   }, [defaultProfileId, setProfileId]);
+
+  const save = async () => {
+    if (!candidate) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const name =
+        mode === 'loop'
+          ? `Loop ${loopDistanceKm} km`
+          : `${startLabel ?? 'Start'} → ${endLabel ?? 'End'}`;
+      const id = await saveRoute({ name, candidate });
+      router.push(`/route/${id}`);
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (Platform.OS === 'web') {
     return (
@@ -50,6 +76,7 @@ export default function NewRouteScreen() {
           MapLibre needs the iOS or Android dev client. Expo Go and web are not
           supported. See MAP_SETUP.md.
         </Text>
+        <NavRow onBack={() => leave(router)} />
       </View>
     );
   }
@@ -102,20 +129,33 @@ export default function NewRouteScreen() {
               {errorMessage ? (
                 <Text style={styles.error}>{errorMessage}</Text>
               ) : null}
+              {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
               {step === 1 ? (
-                <Button
-                  label="Next · style"
-                  disabled={!canContinuePins}
-                  onPress={() => setStep(2)}
+                <NavRow
+                  onBack={() => leave(router)}
+                  onForward={() => setStep(2)}
+                  forwardLabel="Style"
+                  forwardDisabled={!canContinuePins}
                 />
               ) : null}
               {step === 2 ? (
-                <Button
-                  label={isRouting ? 'Generating…' : 'Find routes'}
-                  disabled={isRouting}
-                  onPress={() => {
+                <NavRow
+                  onBack={() => setStep(1)}
+                  onForward={() => {
                     void runCandidateSearch();
                   }}
+                  forwardLabel={isRouting ? 'Generating…' : 'Find routes'}
+                  forwardDisabled={isRouting}
+                />
+              ) : null}
+              {step === 3 ? (
+                <NavRow
+                  onBack={() => setStep(2)}
+                  onForward={() => {
+                    void save();
+                  }}
+                  forwardLabel={saving ? 'Saving…' : 'Save route'}
+                  forwardDisabled={!candidate || saving}
                 />
               ) : null}
             </>
@@ -151,6 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: space.lg,
+    gap: space.md,
   },
   fallbackText: { color: colors.text, textAlign: 'center' },
 });
