@@ -72,5 +72,11 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontWeight: '800',
   },
-  legend: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
 });

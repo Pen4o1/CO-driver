@@ -1,48 +1,43 @@
-import { StyleSheet, Text, View } from 'react-native';
-
 import type { UnitSystem } from '@/core/units';
 import { useSettings } from '@/state/settings';
-import { Chip } from '@/ui/Chip';
-import { colors, space, type } from '@/ui/theme';
+import { Segmented } from '@/ui/Segmented';
+import { SettingGroup, SettingSwitch } from '@/ui/SettingGroup';
+
+const UNITS: { id: UnitSystem; label: string }[] = [
+  { id: 'metric', label: 'km / m' },
+  { id: 'imperial', label: 'mi / yards' },
+];
 
 export function UnitSettingsPanel() {
   const unitSystem = useSettings((s) => s.unitSystem);
   const keepScreenOn = useSettings((s) => s.keepScreenOn);
   const patch = useSettings((s) => s.patch);
 
-  const pick = (unitSystemNext: UnitSystem) => {
-    patch({ unitSystem: unitSystemNext });
-  };
-
   return (
-    <View style={styles.block}>
-      <Text style={styles.body}>Units</Text>
-      <View style={styles.row}>
-        <Chip
-          label="km / m"
-          selected={unitSystem === 'metric'}
-          onPress={() => pick('metric')}
+    <>
+      <SettingGroup
+        title="Distance"
+        footer="Route length and the distances spoken in calls."
+        inset="tight"
+      >
+        <Segmented
+          bare
+          accessibilityLabel="Distance units"
+          value={unitSystem}
+          options={UNITS}
+          onChange={(unitSystemNext) => patch({ unitSystem: unitSystemNext })}
         />
-        <Chip
-          label="mi / yards"
-          selected={unitSystem === 'imperial'}
-          onPress={() => pick('imperial')}
-        />
-      </View>
-      <Text style={styles.body}>Display</Text>
-      <View style={styles.row}>
-        <Chip
+      </SettingGroup>
+      <SettingGroup
+        title="Screen"
+        footer="Stays awake while a drive is running."
+      >
+        <SettingSwitch
           label="Keep screen on"
-          selected={keepScreenOn}
-          onPress={() => patch({ keepScreenOn: !keepScreenOn })}
+          value={keepScreenOn}
+          onValueChange={(next) => patch({ keepScreenOn: next })}
         />
-      </View>
-    </View>
+      </SettingGroup>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { gap: space.sm },
-  body: { color: colors.muted, fontSize: type.body, fontWeight: '600' },
-  row: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
-});

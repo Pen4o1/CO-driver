@@ -16,9 +16,22 @@ type Props = {
   max: number;
   step?: number;
   onChange: (value: number) => void;
+  /** Hide the caption when a settings group already titles the control. */
+  visibleLabel?: boolean;
+  /** Bar sits inside a rectangular section. Pill is the standalone control. */
+  track?: 'pill' | 'bar';
 };
 
-export function Slider({ label, value, min, max, step = 1, onChange }: Props) {
+export function Slider({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  visibleLabel = true,
+  track = 'pill',
+}: Props) {
   const [width, setWidth] = useState(0);
   const ratio = useMemo(() => {
     if (max === min) return 0;
@@ -31,9 +44,11 @@ export function Slider({ label, value, min, max, step = 1, onChange }: Props) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>
-        {label} · {value}
-      </Text>
+      {visibleLabel ? (
+        <Text style={styles.label}>
+          {label} · {value}
+        </Text>
+      ) : null}
       <Pressable
         accessibilityLabel={label}
         accessibilityRole="adjustable"
@@ -48,10 +63,16 @@ export function Slider({ label, value, min, max, step = 1, onChange }: Props) {
           const snapped = Math.round(raw / step) * step;
           onChange(Math.min(max, Math.max(min, snapped)));
         }}
-        style={styles.track}
+        style={[styles.track, track === 'bar' && styles.trackBar]}
       >
         <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
-        <View style={[styles.thumb, { left: `${ratio * 100}%` }]} />
+        <View
+          style={[
+            styles.thumb,
+            track === 'bar' && styles.thumbBar,
+            { left: `${ratio * 100}%` },
+          ]}
+        />
       </Pressable>
     </View>
   );
@@ -69,6 +90,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: 8,
   },
+  trackBar: {
+    height: 36,
+    borderRadius: 8,
+  },
   fill: {
     height: 6,
     borderRadius: 3,
@@ -81,5 +106,9 @@ const styles = StyleSheet.create({
     marginLeft: -11,
     borderRadius: 11,
     backgroundColor: colors.text,
+  },
+  thumbBar: {
+    top: '50%',
+    marginTop: -11,
   },
 });
