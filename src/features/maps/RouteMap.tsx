@@ -28,6 +28,8 @@ type Props = {
   geometry: RouteGeometry | null;
   heat?: boolean;
   interactivePins?: boolean;
+  /** Height of a bottom overlay. Keeps the route and map credits above it. */
+  bottomInset?: number;
   onStartChange?: (next: LatLng) => void;
   onEndChange?: (next: LatLng) => void;
   onMapPress?: (point: LatLng) => void;
@@ -39,6 +41,7 @@ export function RouteMap({
   geometry,
   heat = false,
   interactivePins = true,
+  bottomInset,
   onStartChange,
   onEndChange,
   onMapPress,
@@ -54,12 +57,13 @@ export function RouteMap({
     if (!geometry) {
       return;
     }
+    const bottom = bottomInset == null ? 300 : bottomInset + 16;
     cameraRef.current?.fitBounds(geometry.bbox, {
-      padding: { top: 88, right: 40, bottom: 300, left: 40 },
+      padding: { top: 88, right: 40, bottom, left: 40 },
       duration: 600,
       easing: 'ease',
     });
-  }, [geometry]);
+  }, [geometry, bottomInset]);
 
   const handlePress = (event: NativeSyntheticEvent<PressEvent>) => {
     if (!onMapPress) {
@@ -75,7 +79,16 @@ export function RouteMap({
       style={styles.map}
       compass
       compassPosition={{ top: 48, right: 8 }}
-      attributionPosition={{ bottom: 8, right: 8 }}
+      attributionPosition={
+        bottomInset == null
+          ? { bottom: 8, right: 8 }
+          : { bottom: bottomInset + 8, right: 8 }
+      }
+      logoPosition={
+        bottomInset == null
+          ? undefined
+          : { bottom: bottomInset + 8, left: 8 }
+      }
       onPress={handlePress}
     >
       <Camera

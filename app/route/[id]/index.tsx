@@ -11,7 +11,6 @@ import { getRoute } from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { Button } from '@/ui/Button';
 import { leave, NavRow } from '@/ui/navigation';
-import { Sheet } from '@/ui/Sheet';
 import { colors, space, type } from '@/ui/theme';
 
 export default function RouteDetailsScreen() {
@@ -22,6 +21,7 @@ export default function RouteDetailsScreen() {
   const [name, setName] = useState('Route');
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dockHeight, setDockHeight] = useState(0);
 
   const reload = useCallback(() => {
     if (!id || typeof id !== 'string') return;
@@ -80,6 +80,7 @@ export default function RouteDetailsScreen() {
           geometry={candidate.geometry}
           heat
           interactivePins={false}
+          bottomInset={dockHeight > 0 ? dockHeight : undefined}
         />
       ) : (
         <View style={styles.fallback}>
@@ -90,54 +91,47 @@ export default function RouteDetailsScreen() {
       )}
       {candidate ? (
         <View
-          pointerEvents="box-none"
+          onLayout={(event) => {
+            const next = Math.round(event.nativeEvent.layout.height);
+            setDockHeight((prev) => (prev === next ? prev : next));
+          }}
           style={[
-            styles.bottom,
-            { paddingBottom: Math.max(insets.bottom, space.sm) },
+            styles.dock,
+            { paddingBottom: Math.max(insets.bottom, space.md) },
           ]}
         >
-          <Sheet
-            maxHeight="68%"
-            footer={
-              <NavRow
-                onBack={() => leave(router)}
-                onForward={() => router.push(`/route/${routeId}/recce`)}
-                forwardLabel="Checklist"
-                forwardDisabled={!routeId}
-              />
-            }
-          >
-            <View style={styles.headText}>
-              <Text style={styles.title} numberOfLines={1}>
-                {name}
-              </Text>
-              <Text style={styles.body}>
-                {formatDistanceKm(candidate.geometry.lengthM, units)}
-                {candidate.providerId === 'gpx'
-                  ? ' · uploaded track'
-                  : ` · score ${Math.round(candidate.breakdown.score)}`}
-              </Text>
-              <Text style={styles.body}>
-                Checklist is the next step. It does not start the drive.
-              </Text>
-            </View>
-            <View style={styles.actions}>
-              <Button
-                label="Edit"
-                variant="secondary"
-                accessibilityLabel="Edit route"
-                onPress={() => router.push(`/route/${routeId}/edit`)}
-                style={styles.action}
-              />
-              <Button
-                label="Prepare voice"
-                variant="secondary"
-                onPress={() => router.push(`/route/${routeId}/prepare`)}
-                style={styles.action}
-              />
-            </View>
-            <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
-          </Sheet>
+          <View style={styles.head}>
+            <Text style={styles.title} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={styles.body} numberOfLines={1}>
+              {formatDistanceKm(candidate.geometry.lengthM, units)}
+              {candidate.providerId === 'gpx'
+                ? ' · Uploaded track'
+                : ` · score ${Math.round(candidate.breakdown.score)}`}
+            </Text>
+          </View>
+          <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
+          <View style={styles.actions}>
+            <Button
+              label="Edit"
+              variant="secondary"
+              accessibilityLabel="Edit route"
+              onPress={() => router.push(`/route/${routeId}/edit`)}
+              style={styles.action}
+            />
+            <Button
+              label="Prepare voice"
+              variant="secondary"
+              onPress={() => router.push(`/route/${routeId}/prepare`)}
+              style={styles.action}
+            />
+          </View>
+          <Button
+            label="Checklist"
+            disabled={!routeId}
+            onPress={() => router.push(`/route/${routeId}/recce`)}
+          />
         </View>
       ) : null}
     </View>
@@ -146,16 +140,24 @@ export default function RouteDetailsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  bottom: {
+  dock: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    gap: space.md,
   },
-  headText: { gap: 2 },
+  head: { gap: 2 },
   actions: { flexDirection: 'row', gap: space.sm },
   action: { flex: 1 },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
+  title: { color: colors.text, fontSize: 20, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {
     flex: 1,

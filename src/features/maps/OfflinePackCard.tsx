@@ -20,6 +20,13 @@ type Props = {
   bbox: BBox;
 };
 
+function progressLabel(progress: PackProgress): string {
+  const pct = Math.round(progress.percentage);
+  if (progress.state === 'active') return `Downloading · ${pct}%`;
+  if (progress.state === 'inactive') return `Paused · ${pct}%`;
+  return `Finishing · ${pct}%`;
+}
+
 export function OfflinePackCard({ routeId, bbox }: Props) {
   const status = useSession((s) => s.status);
   const locked = !canMutateLibrary(status);
@@ -54,6 +61,7 @@ export function OfflinePackCard({ routeId, bbox }: Props) {
         (message) => setError(message),
       );
       setReady(true);
+      setProgress(null);
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : 'Download failed');
     } finally {
@@ -61,51 +69,85 @@ export function OfflinePackCard({ routeId, bbox }: Props) {
     }
   };
 
+  const detail = error
+    ? error
+    : progress && !ready
+      ? progressLabel(progress)
+      : ready
+        ? 'Saved on this phone'
+        : `Not saved · about ${formatBytes(estimate.bytes)}`;
+
+  const actionLabel = busy ? 'Downloading…' : ready ? 'Remove' : 'Download';
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Offline map pack</Text>
-      <Text style={styles.body}>
-        OpenFreeMap tiles, corridor +2 km, up to zoom 16 · about{' '}
-        {formatBytes(estimate.bytes)} ({estimate.vectorTiles} vector tiles).
-        Terrarium DEM is ambient-cached after an online view — it is not in the
-        style pack.
-      </Text>
-      {progress ? (
-        <Text style={styles.body}>
-          {Math.round(progress.percentage)}% · {progress.state}
+    <View style={styles.row}>
+      <View style={styles.copy}>
+        <Text style={styles.title}>Offline maps</Text>
+        <Text style={error ? styles.err : ready ? styles.ok : styles.body}>
+          {detail}
         </Text>
-      ) : null}
-      <Text style={ready ? styles.ok : styles.body}>
-        {ready ? 'Pack on device' : 'Not downloaded'}
-      </Text>
-      {error ? <Text style={styles.err}>{error}</Text> : null}
+        {progress && !ready ? (
+          <View style={styles.track}>
+            <View
+              style={[
+                styles.fill,
+                {
+                  width: `${Math.min(100, Math.max(0, progress.percentage))}%`,
+                },
+              ]}
+            />
+          </View>
+        ) : null}
+      </View>
       <Button
-        label={busy ? 'Downloading…' : 'Download offline pack'}
-        variant="secondary"
-        onPress={() => void download()}
+        label={actionLabel}
+        variant="ghost"
+        accessibilityLabel={
+          ready ? 'Remove offline maps' : 'Download offline maps'
+        }
         disabled={locked || busy}
-      />
-      {ready ? (
-        <Button
-          label="Delete pack"
-          variant="secondary"
-          disabled={locked || busy}
-          onPress={() => {
+        onPress={() => {
+          if (ready) {
             void deleteRoutePack(routeId).then(() => {
               setReady(false);
               setProgress(null);
+              setError(null);
             });
-          }}
-        />
-      ) : null}
+            return;
+          }
+          void download();
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { gap: space.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: 14,
+    paddingLeft: space.md,
+    paddingRight: space.xs,
+    paddingVertical: space.xs,
+  },
+  copy: { flex: 1, gap: 2, paddingVertical: space.xs },
   title: { color: colors.text, fontWeight: '700', fontSize: type.body },
   body: { color: colors.muted, fontSize: type.caption },
-  ok: { color: colors.accent, fontWeight: '700' },
-  err: { color: colors.danger },
+  ok: { color: colors.accent, fontSize: type.caption, fontWeight: '600' },
+  err: { color: colors.danger, fontSize: type.caption },
+  track: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginTop: space.xs,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.accent,
+  },
 });
