@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  formatDistanceKm,
+  formatDrivenDistance,
   formatDuration,
   formatSpeed,
   type UnitSystem,
@@ -33,9 +33,13 @@ export function DriveHistoryCard({ drive, units, onOpen }: Props) {
   const when = new Date(drive.startedAt).toISOString().slice(0, 16);
   const avg = drive.stats?.avgSpeedMps ?? 0;
   const max = drive.stats?.maxSpeedMps ?? 0;
+  const routeLengthM =
+    drive.stats?.routeLengthM && drive.stats.routeLengthM > 0
+      ? drive.stats.routeLengthM
+      : drive.routeLengthM;
   const parts = [
     when.replace('T', ' '),
-    formatDistanceKm(drive.distanceM, units),
+    formatDrivenDistance(drive.distanceM, routeLengthM, units),
     drive.durationS > 0 ? formatDuration(drive.durationS) : null,
     avg > 0 ? `${formatSpeed(avg, units)} avg` : null,
     max > 0 ? `${formatSpeed(max, units)} max` : null,

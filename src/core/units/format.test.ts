@@ -1,5 +1,6 @@
 import {
   formatDistanceKm,
+  formatDrivenDistance,
   formatDuration,
   formatLengthM,
   formatSpeed,
@@ -12,6 +13,15 @@ describe('units', () => {
     expect(formatDistanceKm(1609.344, 'imperial')).toBe('1.0 mi');
     expect(formatLengthM(150, 'metric')).toBe('150 m');
     expect(formatLengthM(91.44, 'imperial')).toBe('100 yd');
+  });
+
+  it('shows how much of the route a drive finished', () => {
+    expect(formatDrivenDistance(18200, 24600, 'metric')).toBe('18.2 km · 74%');
+    expect(formatDrivenDistance(1609.344, 3218.688, 'imperial')).toBe(
+      '1.0 mi · 50%',
+    );
+    expect(formatDrivenDistance(11000, 10000, 'metric')).toBe('11.0 km · 100%');
+    expect(formatDrivenDistance(18200, null, 'metric')).toBe('18.2 km');
   });
 
   it('formats duration', () => {

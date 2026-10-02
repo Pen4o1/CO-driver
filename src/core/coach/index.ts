@@ -32,7 +32,7 @@ export {
 export { syntheticFix, advanceCursor, routeCruiseSpeedMps } from './simulate';
 export { mulberry32 } from './rng';
 export type { Rng } from './rng';
-export { driveStats, twistinessSoFar } from './stats';
+export { driveStats, stoppedTimeS, twistinessSoFar } from './stats';
 export type {
   CallLogEntry,
   DriveStats,

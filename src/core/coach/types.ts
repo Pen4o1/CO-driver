@@ -98,4 +98,6 @@ export type DriveStats = {
   avgSpeedMps: number;
   /** Peak GPS speed. Missing on drives recorded before this field existed. */
   maxSpeedMps?: number;
+  /** Planned route length. Missing on drives recorded before this field existed. */
+  routeLengthM?: number;
 };

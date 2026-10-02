@@ -22,6 +22,37 @@ export function formatDistanceKm(distanceM: number, units: UnitSystem): string {
   return `${metresToKm(distanceM).toFixed(1)} km`;
 }
 
+/** Share of the planned route that was actually driven, capped at 100. */
+export function routeCompletionPercent(
+  distanceM: number,
+  routeLengthM: number | null | undefined,
+): number | null {
+  if (
+    routeLengthM == null ||
+    !Number.isFinite(routeLengthM) ||
+    routeLengthM <= 0
+  ) {
+    return null;
+  }
+  if (!Number.isFinite(distanceM) || distanceM < 0) return null;
+  return Math.min(100, Math.round((distanceM / routeLengthM) * 100));
+}
+
+/**
+ * Driven distance plus how much of the route that covers.
+ * A short finish reads as "18.2 km · 74%" instead of a short route.
+ */
+export function formatDrivenDistance(
+  distanceM: number,
+  routeLengthM: number | null | undefined,
+  units: UnitSystem,
+): string {
+  const distance = formatDistanceKm(distanceM, units);
+  const pct = routeCompletionPercent(distanceM, routeLengthM);
+  if (pct == null) return distance;
+  return `${distance} · ${pct}%`;
+}
+
 export function formatLengthM(distanceM: number, units: UnitSystem): string {
   if (units === 'imperial') {
     return `${Math.round(metresToYards(distanceM))} yd`;

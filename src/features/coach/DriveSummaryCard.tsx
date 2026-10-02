@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { DriveStats } from '@/core/coach';
+import { stoppedTimeS, type DriveStats } from '@/core/coach';
 import type { RouteGeometry } from '@/core/types';
 import {
-  formatDistanceKm,
+  formatDrivenDistance,
   formatDuration,
   formatSpeed,
   type UnitSystem,
@@ -27,12 +27,23 @@ function speedLabel(speedMps: number | undefined, units: UnitSystem): string {
 export function DriveSummaryCard({ geometry, stats, units }: Props) {
   const movingAvg =
     stats.movingTimeS > 0 ? stats.distanceM / stats.movingTimeS : 0;
+  const routeLengthM =
+    stats.routeLengthM && stats.routeLengthM > 0
+      ? stats.routeLengthM
+      : geometry?.lengthM;
   const cells: { label: string; value: string }[] = [
-    { label: 'Distance', value: formatDistanceKm(stats.distanceM, units) },
+    {
+      label: 'Distance',
+      value: formatDrivenDistance(stats.distanceM, routeLengthM, units),
+    },
     { label: 'Time', value: formatDuration(stats.durationS) },
     { label: 'Avg speed', value: speedLabel(stats.avgSpeedMps, units) },
     { label: 'Max speed', value: speedLabel(stats.maxSpeedMps, units) },
     { label: 'Moving', value: formatDuration(stats.movingTimeS) },
+    {
+      label: 'Stopped',
+      value: formatDuration(stoppedTimeS(stats.durationS, stats.movingTimeS)),
+    },
     { label: 'Moving avg', value: speedLabel(movingAvg, units) },
   ];
   return (

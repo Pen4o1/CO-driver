@@ -127,6 +127,8 @@ export async function listDrives(): Promise<DriveRow[]> {
 export type DriveHistoryRow = DriveRow & {
   routeName: string;
   geometryJson: string | null;
+  /** Planned length of the route this drive belongs to. Null if the route is gone. */
+  routeLengthM: number | null;
 };
 
 export async function listDriveHistory(): Promise<DriveHistoryRow[]> {
@@ -141,8 +143,9 @@ export async function listDriveHistory(): Promise<DriveHistoryRow[]> {
     stats_json: string | null;
     route_name: string | null;
     geometry_json: string | null;
+    route_length_m: number | null;
   }>(
-    `SELECT d.*, r.name AS route_name, r.geometry_json
+    `SELECT d.*, r.name AS route_name, r.geometry_json, r.length_m AS route_length_m
      FROM drives d
      LEFT JOIN routes r ON r.id = d.route_id
      ORDER BY d.started_at DESC`,
@@ -157,5 +160,6 @@ export async function listDriveHistory(): Promise<DriveHistoryRow[]> {
     stats: row.stats_json ? (JSON.parse(row.stats_json) as DriveStats) : null,
     routeName: row.route_name ?? 'Deleted route',
     geometryJson: row.geometry_json,
+    routeLengthM: row.route_length_m,
   }));
 }

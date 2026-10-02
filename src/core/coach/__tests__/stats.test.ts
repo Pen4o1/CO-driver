@@ -1,4 +1,4 @@
-import { driveStats, twistinessSoFar } from '../stats';
+import { driveStats, stoppedTimeS, twistinessSoFar } from '../stats';
 import { engineFrom, updateEngine } from '../engine';
 import { cornerNote, FILTER, fixAt, straightGeometry } from './helpers';
 
@@ -41,5 +41,13 @@ describe('drive stats', () => {
     expect(stats.maxSpeedMps).toBe(28);
     expect(stats.movingTimeS).toBe(5);
     expect(stats.avgSpeedMps).toBeGreaterThan(0);
+    expect(stats.routeLengthM).toBe(geometry.lengthM);
+    expect(stoppedTimeS(stats.durationS, stats.movingTimeS)).toBe(5);
+  });
+
+  it('treats stopped time as the wait between elapsed and moving', () => {
+    expect(stoppedTimeS(600, 420)).toBe(180);
+    expect(stoppedTimeS(10, 12)).toBe(0);
+    expect(stoppedTimeS(Number.NaN, 4)).toBe(0);
   });
 });

@@ -60,6 +60,12 @@ export function twistinessSoFar(
   return passed / corners.length;
 }
 
+/** Time spent waiting: elapsed time minus time the car was moving. */
+export function stoppedTimeS(durationS: number, movingTimeS: number): number {
+  if (!Number.isFinite(durationS) || !Number.isFinite(movingTimeS)) return 0;
+  return Math.max(0, durationS - movingTimeS);
+}
+
 export function driveStats(state: EngineState, endedAtMs: number): DriveStats {
   const startedAt =
     state.callLog[0]?.atMs ?? state.lastFix?.timestampMs ?? endedAtMs;
@@ -88,5 +94,6 @@ export function driveStats(state: EngineState, endedAtMs: number): DriveStats {
     hairpinsHit,
     avgSpeedMps: durationS > 0 ? distanceM / durationS : 0,
     maxSpeedMps: state.maxSpeedMps,
+    routeLengthM: state.geometry.lengthM,
   };
 }
