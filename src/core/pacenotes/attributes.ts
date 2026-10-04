@@ -81,7 +81,7 @@ function overlapsCorner(
 
 /**
  * Gentle kinks the 12°/40 m gate misses (grade 5–6 arcs).
- * A same-sign run with |net| ≥ 20° becomes a corner if it does not overlap.
+ * A same-sign run with |net| ≥ 12° becomes a corner if it does not overlap.
  */
 export function detectGentleCorners(
   line: Centreline,

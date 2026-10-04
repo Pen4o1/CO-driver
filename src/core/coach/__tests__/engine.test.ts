@@ -2,7 +2,7 @@ import { destinationPoint, pointAtDistance } from '@/core/geo';
 
 import { OFF_ROUTE_TEXT } from '../constants';
 import { engineFrom, pauseEngine, seekEngine, updateEngine } from '../engine';
-import { leadDistanceM } from '../timing';
+import { confirmTriggerM, primaryTriggerM } from '../timing';
 import { cornerNote, FILTER, fixAt, straightGeometry } from './helpers';
 
 const SPEED = 100 / 3.6;
@@ -19,10 +19,9 @@ describe('co-driver engine', () => {
     ).state;
   }
 
-  it('fires the grade-2 primary at exactly 139 m before the apex', () => {
-    const lead = leadDistanceM(note, SPEED);
-    expect(lead).toBe(139);
-    const trigger = 1000 - lead;
+  it('fires the grade-2 primary at exactly 139 m before the entry', () => {
+    const trigger = primaryTriggerM(note, SPEED);
+    expect(trigger).toBe(note.entryDistance - 139);
     let state = warm(trigger - 20, 1);
     let firedAt: number | null = null;
     for (let d = trigger - 19; d <= trigger + 2; d += 1) {
@@ -44,7 +43,7 @@ describe('co-driver engine', () => {
   });
 
   it('never repeats a call unless the car reverses more than 50 m', () => {
-    const trigger = 1000 - 139;
+    const trigger = primaryTriggerM(note, SPEED);
     let state = warm(trigger - 5, 1);
     const first = updateEngine(
       state,
@@ -84,7 +83,7 @@ describe('co-driver engine', () => {
       direction: 'right',
       spokenShort: 'right four',
     });
-    const trigger = 1000 - leadDistanceM(a, SPEED);
+    const trigger = primaryTriggerM(a, SPEED);
     let state = engineFrom(geometry, [a, b], { ...FILTER, chainRadius: 60 });
     state = updateEngine(
       state,
@@ -105,7 +104,7 @@ describe('co-driver engine', () => {
   });
 
   it('skips confirm if the primary fired less than 3 s ago', () => {
-    const primaryAt = 1000 - 139;
+    const primaryAt = primaryTriggerM(note, SPEED);
     let state = warm(primaryAt - 5, 1);
     state = updateEngine(
       state,
@@ -114,7 +113,7 @@ describe('co-driver engine', () => {
     ).state;
     const soon = updateEngine(
       state,
-      fixAt(geometry, 1000 - 40, SPEED, 6000),
+      fixAt(geometry, confirmTriggerM(note), SPEED, 6000),
       6000,
     );
     expect(
@@ -125,8 +124,9 @@ describe('co-driver engine', () => {
   });
 
   it('seek pauses without replaying past calls', () => {
-    let state = warm(1000 - 144, 1);
-    state = updateEngine(state, fixAt(geometry, 1000 - 139, SPEED, 2), 2).state;
+    const trigger = primaryTriggerM(note, SPEED);
+    let state = warm(trigger - 5, 1);
+    state = updateEngine(state, fixAt(geometry, trigger, SPEED, 2), 2).state;
     state = seekEngine(state, 400);
     const result = updateEngine(
       pauseEngine(state, true),

@@ -45,7 +45,7 @@ export function CallSettingsPanel() {
     <>
       <SettingGroup
         title="Lead time"
-        footer="Early leaves more room to brake. Late calls closer to the corner."
+        footer="Counted from where the corner starts, so the call lands before you turn. Early leaves more room to brake."
         inset="tight"
       >
         <Segmented

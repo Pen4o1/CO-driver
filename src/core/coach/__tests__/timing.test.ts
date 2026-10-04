@@ -1,13 +1,14 @@
-import { leadDistanceM, leadSeconds } from '../timing';
+import { leadDistanceM, leadSeconds, primaryTriggerM } from '../timing';
 import { cornerNote } from './helpers';
 
 describe('leadDistance (SPEC §8)', () => {
   const speed100kmh = 100 / 3.6;
 
-  it('grade 2 at 100 km/h, normal preset, fires 139 m before apex', () => {
+  it('grade 2 at 100 km/h, normal preset, fires 139 m before the entry', () => {
     const note = cornerNote('g2', 1000, 2);
     expect(leadSeconds(note)).toBe(5);
     expect(leadDistanceM(note, speed100kmh)).toBe(139);
+    expect(primaryTriggerM(note, speed100kmh)).toBe(note.entryDistance - 139);
   });
 
   it('clamps to 60–350 m', () => {

@@ -26,7 +26,8 @@ export const STRAIGHT_MAX_TURN_DEG = 8;
 
 export const HAIRPIN_RADIUS_M = 20;
 export const HAIRPIN_ANGLE_DEG = 120;
-export const GRADE6_MIN_ANGLE_DEG = 20;
+/** Wide bends flatter than this are not a note. Matches the 12° open gate. */
+export const GRADE6_MIN_ANGLE_DEG = 12;
 
 export const JUNCTION_NEAR_M = 100;
 export const NOTE_MIN_SEPARATION_M = 30;
@@ -34,5 +35,6 @@ export const NOTE_MIN_SEPARATION_M = 30;
 export const SCRIPT_MAX_WORDS = 12;
 export const SCRIPT_MAX_NOTES = 3;
 
-export const GENTLE_MIN_ANGLE_DEG = 20;
+/** Same-direction bends the 40 m window misses. Matches OPEN_DEG. */
+export const GENTLE_MIN_ANGLE_DEG = 12;
 export const CURVATURE_EPS = 1e-7;

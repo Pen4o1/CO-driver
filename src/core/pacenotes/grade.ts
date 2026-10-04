@@ -13,7 +13,7 @@ import type { DetectedCorner, GradedCorner } from './types';
 /**
  * SPEC §5. Hairpin requires r ≤ 20 m AND |angle| ≥ 120°.
  * A tight-radius shallow sweep is grade 2, not a hairpin.
- * Grade 6 needs |angle| ≥ 20°; shallower kinks are dropped.
+ * Grade 6 needs |angle| ≥ 12°; shallower kinks are dropped.
  */
 export function gradeCorner(corner: DetectedCorner): GradedCorner | null {
   const angle = Math.abs(corner.totalAngleDeg);

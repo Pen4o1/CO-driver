@@ -19,6 +19,7 @@ exports[`Sofia → Zlatnite Mostove fixture grade-3 threshold removes only corne
   "150, right four.",
   "200, left four.",
   "150, left four.",
+  "100, right four.",
   "150, right four.",
   "100, left four.",
   "150, left four.",
@@ -335,11 +336,19 @@ exports[`Sofia → Zlatnite Mostove fixture snapshots the full note list 1`] = `
     "type": "corner",
   },
   {
+    "at": 14182,
+    "chain": null,
+    "dir": "right",
+    "grade": 4,
+    "short": "100, right four.",
+    "type": "corner",
+  },
+  {
     "at": 14352,
     "chain": null,
     "dir": "right",
     "grade": 3,
-    "short": "300, right three.",
+    "short": "150, right three.",
     "type": "corner",
   },
   {

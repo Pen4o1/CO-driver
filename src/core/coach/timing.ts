@@ -53,17 +53,29 @@ export function leadDistanceM(
   return clamp(Math.round(raw), timing.minLeadM, timing.maxLeadM);
 }
 
+/**
+ * Where the warning is measured to.
+ * Corners use the entry: braking has to be done before the road starts to turn.
+ * Other notes use their own point (apex, midpoint, or junction).
+ */
+export function warningAnchorM(note: PaceNote): number {
+  if (note.type === 'corner') {
+    return note.entryDistance;
+  }
+  return note.atDistance;
+}
+
 export function primaryTriggerM(
   note: PaceNote,
   speedMps: number,
   timing: TimingSettings = DEFAULT_TIMING,
 ): number {
-  return note.atDistance - leadDistanceM(note, speedMps, timing);
+  return warningAnchorM(note) - leadDistanceM(note, speedMps, timing);
 }
 
 export function confirmTriggerM(
   note: PaceNote,
   timing: TimingSettings = DEFAULT_TIMING,
 ): number {
-  return note.atDistance - timing.confirmLeadM;
+  return warningAnchorM(note) - timing.confirmLeadM;
 }

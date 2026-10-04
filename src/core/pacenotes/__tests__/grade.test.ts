@@ -70,4 +70,24 @@ describe('grade table (SPEC §5)', () => {
     });
     expect(fake?.grade).toBe(2);
   });
+
+  it('keeps a wide 15° sweeper the 40 m window misses', () => {
+    const notes = derivePaceNotes(
+      makeArc({ radiusM: 400, sweepDeg: 15, leadM: 120 }),
+      [],
+      { ...DEFAULT_NOTE_FILTER, includeStraights: false },
+    );
+    const corners = notes.filter((n) => n.type === 'corner');
+    expect(corners.length).toBeGreaterThanOrEqual(1);
+    expect(Math.abs(corners[0].totalAngleDeg ?? 0)).toBeGreaterThanOrEqual(12);
+  });
+
+  it('ignores an 8° kink', () => {
+    const notes = derivePaceNotes(
+      makeArc({ radiusM: 500, sweepDeg: 8, leadM: 80 }),
+      [],
+      { ...DEFAULT_NOTE_FILTER, includeStraights: false },
+    );
+    expect(notes.filter((n) => n.type === 'corner')).toHaveLength(0);
+  });
 });

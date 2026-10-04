@@ -229,6 +229,7 @@ Input: `RouteGeometry`. Output: `Corner[]`.
    - **Open** a corner when `|angleInWindow| > 12°` and direction is consistent for 3 consecutive samples.
    - **Close** a corner when `|angleInWindow|` drops below 60% of the peak observed so far. Require a corner to span `>= 15 m` or discard it as noise.
    - Concatenate overlapping spans. Discard spans where direction consistency `< 0.75` (that's an S-curve, re-run detection inside it with a smaller window).
+   - A same-direction bend the 40 m window misses is still a corner when its total angle is at least 12°.
 4. **Per corner metrics:**
    - `totalAngleDeg` = signed sum of Δθ over the span.
    - `radiusM = arcLength / |totalAngleDeg * π/180|` (guard: if `|angle| < 1°`, drop).
@@ -254,7 +255,7 @@ Input: `RouteGeometry`. Output: `Corner[]`.
 | 3 | Tight / medium | 40–80 m | |
 | 4 | Medium | 80–150 m | |
 | 5 | Fast | 150–300 m | |
-| 6 | Flat / kink | > 300 m | total angle ≥ 20°, else not a note |
+| 6 | Flat / kink | > 300 m | total angle ≥ 12°, else not a note |
 
 **Severity** `0..1` for UI + priority: `severity = clamp01( (7 - grade) / 6 * 0.7 + min(|totalAngle|/180, 1) * 0.3 )`.
 
@@ -390,14 +391,17 @@ leadDistance(note, v) = clamp(v * leadSeconds(note) * presetScale, 60 m, 350 m)
   presetScale: early 1.25 · normal 1.0 · late 0.8
 ```
 
-- **Primary call** at `atDistance - leadDistance`.
-- **Confirm call** at `atDistance - 40 m`, terse form, skipped if the primary fired < 3 s ago or `confirmCalls === false`.
+- **Primary call** at `warningAnchor - leadDistance`.
+  For a corner, `warningAnchor` is `entryDistance` (where the road starts to turn).
+  For every other note it is `atDistance`. The lead is time to begin braking,
+  so a long corner is called before its entry rather than before its apex.
+- **Confirm call** at `warningAnchor - 40 m`, terse form, skipped if the primary fired < 3 s ago or `confirmCalls === false`.
 - **Coalescing:** if `nextNote.atDistance - note.atDistance <= chainRadius`, speak both in one utterance.
 - **Never repeat:** a note fires once. It re-arms only if the car back-tracks more than 50 m behind its `atDistance`.
 - **Off-route:** `crossTrackM > 35` for 3 consecutive fixes *and* speed > 2 m/s → pause, announce, re-route.
 - **Look-ahead window:** evaluate all notes within `currentDistance + v * 8 s`.
 
-Acceptance test: approaching a grade-2 corner at 100 km/h (27.8 m/s) with the `normal` preset, the primary call fires at exactly `139 m` before the apex.
+Acceptance test: approaching a grade-2 corner at 100 km/h (27.8 m/s) with the `normal` preset, the primary call fires at exactly `139 m` before the corner entry.
 
 ---
 
