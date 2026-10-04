@@ -33,6 +33,8 @@ export { syntheticFix, advanceCursor, routeCruiseSpeedMps } from './simulate';
 export { mulberry32 } from './rng';
 export type { Rng } from './rng';
 export { driveStats, stoppedTimeS, twistinessSoFar } from './stats';
+export { SPEED_BAND_COUNT, speedHeat } from './speedHeat';
+export type { SpeedHeat, SpeedHighlight, SpeedSegment } from './speedHeat';
 export type {
   CallLogEntry,
   DriveStats,

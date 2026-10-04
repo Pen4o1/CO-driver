@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { DriveStats } from '@/core/coach';
-import type { RouteGeometry } from '@/core/types';
+import type { GeoFix, RouteGeometry } from '@/core/types';
 import { DriveSummaryCard } from '@/features/coach/DriveSummaryCard';
-import { getDrive, getRoute } from '@/features/storage';
+import { getDrive, getRoute, listDriveFixes } from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
@@ -30,6 +30,7 @@ export default function DriveSummaryScreen() {
   }>();
   const [geometry, setGeometry] = useState<RouteGeometry | null>(null);
   const [stats, setStats] = useState<DriveStats>(EMPTY);
+  const [fixes, setFixes] = useState<GeoFix[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -38,8 +39,13 @@ export default function DriveSummaryScreen() {
       const route = await getRoute(id);
       if (!cancelled && route) setGeometry(route.candidate.geometry);
       if (driveId) {
-        const drive = await getDrive(driveId);
-        if (!cancelled && drive?.stats) setStats(drive.stats);
+        const [drive, trace] = await Promise.all([
+          getDrive(driveId),
+          listDriveFixes(driveId),
+        ]);
+        if (cancelled) return;
+        if (drive?.stats) setStats(drive.stats);
+        setFixes(trace);
       }
     })();
     return () => {
@@ -56,8 +62,19 @@ export default function DriveSummaryScreen() {
         { paddingBottom: Math.max(insets.bottom, space.lg) },
       ]}
     >
-      <Text style={styles.kicker}>Drive summary</Text>
-      <DriveSummaryCard geometry={geometry} stats={stats} units={units} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.kicker}>Drive summary</Text>
+        <DriveSummaryCard
+          geometry={geometry}
+          stats={stats}
+          units={units}
+          fixes={fixes}
+        />
+      </ScrollView>
       <NavRow
         onBack={() => router.replace(routeId ? `/route/${routeId}` : '/')}
         backLabel="Route"
@@ -72,8 +89,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
-    padding: space.lg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
     gap: space.md,
   },
+  scroll: { flex: 1 },
+  content: { gap: space.md, paddingBottom: space.md },
   kicker: { color: colors.muted, fontSize: type.caption, fontWeight: '700' },
 });
