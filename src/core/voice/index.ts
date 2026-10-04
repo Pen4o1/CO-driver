@@ -7,7 +7,7 @@ export {
   PREPARE_CONCURRENCY,
   SAMPLE_PHRASE,
 } from './constants';
-export { planRouteClips, formatBytes } from './clipPlan';
+export { planRouteClips, planRouteClipVariants, formatBytes } from './clipPlan';
 export type { ClipPlan, PlannedClip } from './clipPlan';
 export {
   speakLikeCoDriver,

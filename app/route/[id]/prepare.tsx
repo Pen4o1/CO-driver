@@ -3,8 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DEFAULT_NOTE_FILTER, derivePaceNotesDetailed } from '@/core/pacenotes';
-import { formatBytes, planRouteClips } from '@/core/voice';
+import { derivePaceNotesDetailed } from '@/core/pacenotes';
+import {
+  formatBytes,
+  planRouteClipVariants,
+  planRouteClips,
+} from '@/core/voice';
+import { filterFromSettings } from '@/features/coach/loadDriveBundle';
 import {
   createTtsProvider,
   prepareRouteClips,
@@ -24,6 +29,19 @@ export default function PrepareScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const ttsProviderId = useSettings((s) => s.ttsProviderId);
   const voiceId = useSettings((s) => s.voiceId);
+  const callSettingsKey = useSettings((s) =>
+    [
+      s.minGradeToCall,
+      s.includeJunctions,
+      s.includeCrests,
+      s.includeStraights,
+      s.includeCareNotes,
+      s.includeFinish,
+      s.verbosity,
+      s.chainRadius,
+      s.confirmCalls,
+    ].join('|'),
+  );
   const cancelled = useRef(false);
 
   const [name, setName] = useState('Route');
@@ -57,14 +75,16 @@ export default function PrepareScreen() {
           return;
         }
         setName(row.name);
+        const filter = filterFromSettings();
         const derived = derivePaceNotesDetailed(
           row.candidate.geometry,
           row.candidate.steps,
-          DEFAULT_NOTE_FILTER,
+          filter,
         );
-        const plan = planRouteClips(derived.rawNotes, DEFAULT_NOTE_FILTER);
-        setNoteCount(plan.uniqueTexts.length);
-        setEstimate(plan.estimatedBytes);
+        const checklist = planRouteClips(derived.rawNotes, filter);
+        const recorded = planRouteClipVariants(derived.rawNotes, filter);
+        setNoteCount(checklist.uniqueTexts.length);
+        setEstimate(recorded.estimatedBytes);
       })
       .catch((caught: unknown) => {
         if (!gone) {
@@ -74,7 +94,7 @@ export default function PrepareScreen() {
     return () => {
       gone = true;
     };
-  }, [id]);
+  }, [id, callSettingsKey]);
 
   const runPrepare = async (forceLive: boolean) => {
     if (!id || typeof id !== 'string') return;
@@ -83,15 +103,16 @@ export default function PrepareScreen() {
     try {
       const row = await getRoute(id);
       if (!row) throw new Error('Route not found');
+      const filter = filterFromSettings();
       const derived = derivePaceNotesDetailed(
         row.candidate.geometry,
         row.candidate.steps,
-        DEFAULT_NOTE_FILTER,
+        filter,
       );
       const active = forceLive ? createTtsProvider('device') : provider;
       const result = await prepareRouteClips({
         rawNotes: derived.rawNotes,
-        filter: DEFAULT_NOTE_FILTER,
+        filter,
         provider: active,
         voiceId,
         cache: sqliteVoiceCache(getDb),
@@ -128,8 +149,9 @@ export default function PrepareScreen() {
         <Text style={styles.title}>Prepare voice</Text>
         <Text style={styles.body}>{name}</Text>
         <Text style={styles.hint}>
-          {noteCount} unique calls across chain-radius 0 / 60 / 200 m. Estimated{' '}
-          {formatBytes(estimate)}.
+          {noteCount} calls on the checklist for your current settings. Prepare
+          also records Full, Standard, and Terse, at chain distances 0 / 60 /
+          200 m. Estimated {formatBytes(estimate)}.
         </Text>
         <Text style={styles.hint}>{provider.description}</Text>
         {progress ? (

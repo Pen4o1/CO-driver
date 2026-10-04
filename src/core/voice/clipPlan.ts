@@ -57,6 +57,38 @@ export function planRouteClips(
   return { clips, uniqueTexts, estimatedBytes };
 }
 
+const VERBOSITY_VARIANTS: readonly NoteFilterOptions['verbosity'][] = [
+  'full',
+  'standard',
+  'terse',
+];
+
+/**
+ * Every phrase the checklist can ask for after a call-length change.
+ * Chain distance is already expanded inside planRouteClips. Call length
+ * rewrites the words, so Full / Standard / Terse are recorded together.
+ */
+export function planRouteClipVariants(
+  rawNotes: PaceNote[],
+  filter: NoteFilterOptions,
+  speakOpts: SpeakLikeOptions = {},
+): ClipPlan {
+  const byText = new Map<string, PlannedClip>();
+  for (const verbosity of VERBOSITY_VARIANTS) {
+    const plan = planRouteClips(rawNotes, { ...filter, verbosity }, speakOpts);
+    for (const clip of plan.clips) {
+      if (!byText.has(clip.text)) byText.set(clip.text, clip);
+    }
+  }
+  const clips = [...byText.values()];
+  const uniqueTexts = clips.map((clip) => clip.text);
+  const estimatedBytes = uniqueTexts.reduce(
+    (sum, text) => sum + Math.max(8_000, text.length * BYTES_PER_CHAR_ESTIMATE),
+    0,
+  );
+  return { clips, uniqueTexts, estimatedBytes };
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;

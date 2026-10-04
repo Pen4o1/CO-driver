@@ -2,7 +2,7 @@ import { mapPool } from '@/features/routing/pool';
 import {
   LIVE_CLIP_URI,
   PREPARE_CONCURRENCY,
-  planRouteClips,
+  planRouteClipVariants,
   voiceCacheMaterial,
   type ClipPlan,
 } from '@/core/voice';
@@ -44,7 +44,7 @@ export async function prepareRouteClips(input: {
   onProgress?: (progress: PrepareProgress) => void;
   cancelled?: () => boolean;
 }): Promise<PrepareResult> {
-  const plan = planRouteClips(input.rawNotes, input.filter);
+  const plan = planRouteClipVariants(input.rawNotes, input.filter);
   const total = plan.uniqueTexts.length;
   const live = !input.provider.canPrerender;
   let done = 0;
@@ -85,7 +85,7 @@ export async function prepareRouteClips(input: {
     const clips: PreparedClip[] = [];
     for (const text of plan.uniqueTexts) {
       if (input.cancelled?.()) {
-        break;
+        throw new Error('Prepare stopped before every call was recorded.');
       }
       clips.push(await worker(text));
     }
@@ -112,9 +112,13 @@ export async function prepareRouteClips(input: {
       failures.push(result.reason);
     }
   }
-  if (failures.length > 0 && clips.length === 0) {
+  if (failures.length > 0 || clips.length !== plan.uniqueTexts.length) {
     const first = failures[0];
-    throw first instanceof Error ? first : new Error('Voice prepare failed');
+    throw first instanceof Error
+      ? first
+      : new Error(
+          `Recorded ${clips.length} of ${plan.uniqueTexts.length} calls`,
+        );
   }
   return { clips, plan, live: false, bytes };
 }
