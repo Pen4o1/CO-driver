@@ -1,4 +1,10 @@
-import { driveStats, stoppedTimeS, twistinessSoFar } from '../stats';
+import {
+  driveStats,
+  isBlankDriveStats,
+  statsFromTrace,
+  stoppedTimeS,
+  twistinessSoFar,
+} from '../stats';
 import { engineFrom, updateEngine } from '../engine';
 import { cornerNote, FILTER, fixAt, straightGeometry } from './helpers';
 
@@ -49,5 +55,30 @@ describe('drive stats', () => {
     expect(stoppedTimeS(600, 420)).toBe(180);
     expect(stoppedTimeS(10, 12)).toBe(0);
     expect(stoppedTimeS(Number.NaN, 4)).toBe(0);
+  });
+
+  it('rebuilds distance and peak speed from a saved trace', () => {
+    expect(isBlankDriveStats(null)).toBe(true);
+    expect(
+      isBlankDriveStats({
+        distanceM: 0,
+        durationS: 0,
+        movingTimeS: 0,
+        cornersByGrade: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+        hairpinsHit: 0,
+        avgSpeedMps: 0,
+        maxSpeedMps: 0,
+      }),
+    ).toBe(true);
+    const geometry = straightGeometry(2000);
+    const stats = statsFromTrace([
+      fixAt(geometry, 0, 10, 1_000),
+      fixAt(geometry, 150, 20, 8_000),
+      fixAt(geometry, 300, 28, 16_000),
+    ]);
+    expect(stats).not.toBeNull();
+    expect(stats?.distanceM).toBeGreaterThan(250);
+    expect(stats?.durationS).toBe(15);
+    expect(stats?.maxSpeedMps).toBe(28);
   });
 });

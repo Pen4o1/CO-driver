@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,6 +31,7 @@ export default function DriveHudScreen() {
   const [bundleError, setBundleError] = useState<string | null>(null);
   const [bundle, setBundle] =
     useState<Awaited<ReturnType<typeof loadDriveBundle>>>(null);
+  const openedSummary = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -92,10 +93,14 @@ export default function DriveHudScreen() {
   }, [ready, bundle?.candidate.id]);
 
   useEffect(() => {
-    if (coach.output?.status === 'finished' && coach.driveId) {
-      router.replace(`/drive/${id}/summary?driveId=${coach.driveId}`);
-    }
-  }, [coach.output?.status, coach.driveId, id, router]);
+    if (openedSummary.current) return;
+    if (coach.output?.status !== 'finished' || !coach.driveId) return;
+    openedSummary.current = true;
+    const savedId = coach.driveId;
+    void coach.stop().finally(() => {
+      router.replace(`/drive/${id}/summary?driveId=${savedId}`);
+    });
+  }, [coach.output?.status, coach.driveId, coach.stop, id, router]);
 
   const next = coach.output?.nextNotes[0] ?? null;
   const metres = coach.output?.debug.upcoming[0]?.fireInM ?? null;

@@ -59,6 +59,7 @@ export function useCoDriver(input: UseCoDriverInput) {
   const [error, setError] = useState<string | null>(null);
   const [driveId, setDriveId] = useState<string | null>(null);
   const driveIdRef = useRef<string | null>(null);
+  const epochRef = useRef(0);
   const engineRef = useRef<EngineState | null>(null);
   const voiceRef = useRef<ReturnType<typeof createDriveVoice> | null>(null);
   const rerouting = useRef(false);
@@ -110,6 +111,8 @@ export function useCoDriver(input: UseCoDriverInput) {
   );
 
   const start = useCallback(async () => {
+    const ticket = epochRef.current + 1;
+    epochRef.current = ticket;
     setError(null);
     const cfg = inputRef.current;
     engineRef.current = engineFrom(
@@ -126,6 +129,7 @@ export function useCoDriver(input: UseCoDriverInput) {
     voiceRef.current = voice;
     const detach = attachVoiceInterruptions(voice);
     const id = await createDrive(cfg.routeId, Date.now());
+    if (ticket !== epochRef.current) return;
     driveIdRef.current = id;
     setDriveId(id);
     setRunning(true);
@@ -157,23 +161,29 @@ export function useCoDriver(input: UseCoDriverInput) {
   }, [pushFix]);
 
   const stop = useCallback(async () => {
+    epochRef.current += 1;
     setRunning(false);
     useSession.getState().setStatus('idle');
-    unsubRef.current?.();
-    unsubRef.current = null;
-    const engine = engineRef.current;
-    engineRef.current = engine ? pauseEngine(engine, true) : null;
-    await voiceRef.current?.stop();
-    voiceRef.current?.dispose();
-    voiceRef.current = null;
-    setLocationTaskListener(null);
-    await stopBackgroundUpdates();
-    void deactivateKeepAwake(AWAKE_TAG);
     const id = driveIdRef.current;
-    const ended = engineRef.current ?? engine;
-    if (ended && id) {
-      const stats = driveStats(ended, Date.now());
-      await finishDrive({ id, endedAt: Date.now(), stats });
+    const engine = engineRef.current;
+    try {
+      if (engine && id) {
+        await finishDrive({
+          id,
+          endedAt: Date.now(),
+          stats: driveStats(engine, Date.now()),
+        });
+      }
+    } finally {
+      unsubRef.current?.();
+      unsubRef.current = null;
+      engineRef.current = engine ? pauseEngine(engine, true) : null;
+      await voiceRef.current?.stop();
+      voiceRef.current?.dispose();
+      voiceRef.current = null;
+      setLocationTaskListener(null);
+      await stopBackgroundUpdates();
+      void deactivateKeepAwake(AWAKE_TAG);
     }
   }, []);
 

@@ -3,10 +3,20 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { DriveStats } from '@/core/coach';
+import {
+  isBlankDriveStats,
+  statsFromTrace,
+  type DriveStats,
+} from '@/core/coach';
+import { derivePaceNotes } from '@/core/pacenotes';
 import type { GeoFix, RouteGeometry } from '@/core/types';
 import { DriveSummaryCard } from '@/features/coach/DriveSummaryCard';
-import { getDrive, getRoute, listDriveFixes } from '@/features/storage';
+import {
+  finishDrive,
+  getDrive,
+  getRoute,
+  listDriveFixes,
+} from '@/features/storage';
 import { useSettings } from '@/state/settings';
 import { NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
@@ -44,7 +54,27 @@ export default function DriveSummaryScreen() {
           listDriveFixes(driveId),
         ]);
         if (cancelled) return;
-        if (drive?.stats) setStats(drive.stats);
+        let stats = drive?.stats ?? null;
+        if (isBlankDriveStats(stats) && trace.length >= 2) {
+          const notes = route
+            ? derivePaceNotes(route.candidate.geometry, route.candidate.steps)
+            : [];
+          const repaired = statsFromTrace(trace, {
+            geometry: route?.candidate.geometry ?? null,
+            notes,
+            routeLengthM: route?.candidate.geometry.lengthM ?? null,
+          });
+          if (repaired) {
+            stats = repaired;
+            await finishDrive({
+              id: driveId,
+              endedAt: trace[trace.length - 1]?.timestampMs ?? Date.now(),
+              stats: repaired,
+            });
+          }
+        }
+        if (cancelled) return;
+        if (stats) setStats(stats);
         setFixes(trace);
       }
     })();
