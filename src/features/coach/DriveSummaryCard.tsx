@@ -103,13 +103,15 @@ export function DriveSummaryCard({
                 : null
             }
             geometry={geometry}
-            heat
             speedTrace={speedTrace}
             interactivePins={false}
             bottomInset={0}
           />
           {trace.segments.length > 0 ? <SpeedLegend /> : null}
         </View>
+      ) : null}
+      {fixes.length === 0 ? (
+        <Text style={styles.note}>No GPS trace was saved for this drive.</Text>
       ) : null}
       <View style={styles.grid}>
         {cells.map((cell) => (
@@ -151,4 +153,5 @@ const styles = StyleSheet.create({
   },
   cellValue: { color: colors.text, fontSize: type.body, fontWeight: '800' },
   body: { color: colors.muted, fontSize: type.body },
+  note: { color: colors.muted, fontSize: type.caption, fontWeight: '700' },
 });

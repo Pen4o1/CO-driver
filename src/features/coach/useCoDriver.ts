@@ -58,6 +58,7 @@ export function useCoDriver(input: UseCoDriverInput) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [driveId, setDriveId] = useState<string | null>(null);
+  const driveIdRef = useRef<string | null>(null);
   const engineRef = useRef<EngineState | null>(null);
   const voiceRef = useRef<ReturnType<typeof createDriveVoice> | null>(null);
   const rerouting = useRef(false);
@@ -77,7 +78,7 @@ export function useCoDriver(input: UseCoDriverInput) {
       engineRef.current = result.state;
       setOutput(result.output);
       applyEngineOutput(voice, result.output);
-      const id = driveId;
+      const id = driveIdRef.current;
       if (id) {
         void appendDriveFix(id, fix);
       }
@@ -105,7 +106,7 @@ export function useCoDriver(input: UseCoDriverInput) {
           });
       }
     },
-    [driveId],
+    [],
   );
 
   const start = useCallback(async () => {
@@ -125,6 +126,7 @@ export function useCoDriver(input: UseCoDriverInput) {
     voiceRef.current = voice;
     const detach = attachVoiceInterruptions(voice);
     const id = await createDrive(cfg.routeId, Date.now());
+    driveIdRef.current = id;
     setDriveId(id);
     setRunning(true);
     useSession.getState().setStatus('driving');
@@ -167,13 +169,13 @@ export function useCoDriver(input: UseCoDriverInput) {
     setLocationTaskListener(null);
     await stopBackgroundUpdates();
     void deactivateKeepAwake(AWAKE_TAG);
-    const id = driveId;
+    const id = driveIdRef.current;
     const ended = engineRef.current ?? engine;
     if (ended && id) {
       const stats = driveStats(ended, Date.now());
       await finishDrive({ id, endedAt: Date.now(), stats });
     }
-  }, [driveId]);
+  }, []);
 
   const mute = useCallback((next: boolean) => {
     setMuted(next);
