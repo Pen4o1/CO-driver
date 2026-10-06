@@ -33,6 +33,7 @@ function vertexBearingsDeg(coords: LatLng[]): number[] {
 /**
  * Circular moving average of vertex bearings.
  * Window is metres along-track on each side. Hann weights. Does not invent samples.
+ * Cumulative distance is monotonic, so each vertex only visits neighbours inside the window.
  */
 export function smoothBearings(coords: LatLng[], windowM: number): number[] {
   const raw = vertexBearingsDeg(coords);
@@ -41,16 +42,21 @@ export function smoothBearings(coords: LatLng[], windowM: number): number[] {
   }
   const cum = cumulativeDistancesM(coords);
   const out = new Array<number>(raw.length);
+  let left = 0;
 
   for (let i = 0; i < raw.length; i += 1) {
+    while (cum[i] - cum[left] > windowM) {
+      left += 1;
+    }
+    let right = i;
+    while (right + 1 < raw.length && cum[right + 1] - cum[i] <= windowM) {
+      right += 1;
+    }
     let sumSin = 0;
     let sumCos = 0;
     let weightSum = 0;
-    for (let j = 0; j < raw.length; j += 1) {
+    for (let j = left; j <= right; j += 1) {
       const ds = Math.abs(cum[j] - cum[i]);
-      if (ds > windowM) {
-        continue;
-      }
       const w = hannWeight(ds, windowM);
       const rad = (raw[j] * Math.PI) / 180;
       sumSin += w * Math.sin(rad);

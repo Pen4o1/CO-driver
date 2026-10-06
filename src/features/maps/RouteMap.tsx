@@ -6,8 +6,12 @@ import {
   type MapRef,
   type PressEvent,
 } from '@maplibre/maplibre-react-native';
-import { useEffect, useMemo, useRef } from 'react';
-import { type NativeSyntheticEvent, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  InteractionManager,
+  type NativeSyntheticEvent,
+  StyleSheet,
+} from 'react-native';
 
 import {
   DEFAULT_MAP_CENTER,
@@ -16,7 +20,7 @@ import {
 } from '@/core/config';
 import type { SpeedSegment } from '@/core/coach';
 import { boundingBox } from '@/core/geo';
-import { gradeHeatSegments } from '@/core/scoring';
+import { gradeHeatSegments, type GradeSegment } from '@/core/scoring';
 import type { LatLng, RouteGeometry } from '@/core/types';
 
 import { fromLngLat, toLngLat } from './coords';
@@ -60,10 +64,27 @@ export function RouteMap({
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<MapRef>(null);
   const showSpeed = (speedTrace?.segments.length ?? 0) > 0;
-  const segments = useMemo(
-    () => (heat && !showSpeed && geometry ? gradeHeatSegments(geometry) : []),
-    [heat, showSpeed, geometry],
-  );
+  const [heatFor, setHeatFor] = useState<{
+    geometry: RouteGeometry;
+    segments: GradeSegment[];
+  } | null>(null);
+  const segments =
+    heat && !showSpeed && geometry && heatFor?.geometry === geometry
+      ? heatFor.segments
+      : [];
+
+  useEffect(() => {
+    if (!heat || showSpeed || !geometry) return;
+    let cancelled = false;
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (cancelled) return;
+      setHeatFor({ geometry, segments: gradeHeatSegments(geometry) });
+    });
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
+  }, [heat, showSpeed, geometry]);
 
   useEffect(() => {
     const traceCoords =

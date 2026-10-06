@@ -1,4 +1,5 @@
 import { GeoJSONSource, Layer } from '@maplibre/maplibre-react-native';
+import { useMemo } from 'react';
 
 import type { LatLng } from '@/core/types';
 import { colors } from '@/ui/theme';
@@ -10,11 +11,12 @@ type Props = {
 };
 
 export function RouteLine({ coords }: Props) {
+  const data = useMemo(() => routeToGeoJSON(coords), [coords]);
   if (coords.length < 2) {
     return null;
   }
   return (
-    <GeoJSONSource id="preview-route" data={routeToGeoJSON(coords)}>
+    <GeoJSONSource id="preview-route" data={data}>
       <Layer
         id="preview-route-line"
         type="line"

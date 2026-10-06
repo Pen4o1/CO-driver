@@ -36,4 +36,20 @@ describe('dedupeCandidates', () => {
     expect(sameRoad(a, b)).toBe(false);
     expect(dedupeCandidates([a, b])).toHaveLength(2);
   });
+
+  it('compares a long route without building a quadratic Fréchet grid', () => {
+    const coords = straightLine(200_000);
+    const copy = makeCandidate({ id: 'long-a', coords, durationS: 9000 });
+    const same = makeCandidate({ id: 'long-b', coords, durationS: 8000 });
+    const shifted = makeCandidate({
+      id: 'long-c',
+      coords: coords.map((p) => ({ lat: p.lat + 0.5, lng: p.lng })),
+      durationS: 9000,
+    });
+    const start = Date.now();
+    expect(sameRoad(copy, same)).toBe(true);
+    expect(sameRoad(copy, shifted)).toBe(false);
+    expect(dedupeCandidates([copy, same, shifted])).toHaveLength(2);
+    expect(Date.now() - start).toBeLessThan(1000);
+  });
 });

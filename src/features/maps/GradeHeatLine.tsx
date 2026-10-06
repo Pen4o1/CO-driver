@@ -1,4 +1,5 @@
 import { GeoJSONSource, Layer } from '@maplibre/maplibre-react-native';
+import { useMemo } from 'react';
 
 import type { GradeSegment } from '@/core/scoring';
 import { gradeColor } from '@/ui/theme';
@@ -10,21 +11,24 @@ type Props = {
 };
 
 export function GradeHeatLine({ segments }: Props) {
+  const data = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: segments.map((segment, index) => ({
+        type: 'Feature' as const,
+        id: index,
+        properties: { grade: segment.grade },
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: segment.coords.map(toLngLat),
+        },
+      })),
+    }),
+    [segments],
+  );
   if (segments.length === 0) {
     return null;
   }
-  const data = {
-    type: 'FeatureCollection' as const,
-    features: segments.map((segment, index) => ({
-      type: 'Feature' as const,
-      id: index,
-      properties: { grade: segment.grade },
-      geometry: {
-        type: 'LineString' as const,
-        coordinates: segment.coords.map(toLngLat),
-      },
-    })),
-  };
   return (
     <GeoJSONSource id="grade-heat" data={data}>
       <Layer

@@ -9,6 +9,20 @@ type Props = {
   height?: number;
 };
 
+const SPARK_POINTS = 40;
+
+function decimate(coords: LatLng[], maxPoints: number): LatLng[] {
+  if (coords.length <= maxPoints) {
+    return coords;
+  }
+  const last = maxPoints - 1;
+  const out: LatLng[] = [];
+  for (let i = 0; i < maxPoints; i += 1) {
+    out.push(coords[Math.round((i * (coords.length - 1)) / last)]);
+  }
+  return out;
+}
+
 export function RouteSparkline({ coords, width = 120, height = 40 }: Props) {
   if (coords.length < 2) {
     return <View style={{ width, height }} />;
@@ -28,18 +42,14 @@ export function RouteSparkline({ coords, width = 120, height = 40 }: Props) {
   const spanLng = Math.max(maxLng - minLng, 1e-6);
   const innerW = width - pad * 2;
   const innerH = height - pad * 2;
-  const points = coords.map((p) => ({
+  const points = decimate(coords, SPARK_POINTS).map((p) => ({
     x: pad + ((p.lng - minLng) / spanLng) * innerW,
     y: pad + (1 - (p.lat - minLat) / spanLat) * innerH,
   }));
-  const stride = Math.max(1, Math.floor(points.length / 40));
 
   return (
     <View style={[styles.box, { width, height }]}>
       {points.slice(1).map((p, i) => {
-        if (i % stride !== 0) {
-          return null;
-        }
         const a = points[i];
         const dx = p.x - a.x;
         const dy = p.y - a.y;
