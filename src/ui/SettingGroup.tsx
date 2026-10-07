@@ -108,18 +108,26 @@ export function SettingSwitch({
 
 type LinkProps = {
   label: string;
+  value?: string;
   onPress: () => void;
 };
 
-export function SettingLink({ label, onPress }: LinkProps) {
+export function SettingLink({ label, value, onPress }: LinkProps) {
   return (
     <Pressable
-      accessibilityLabel={label}
+      accessibilityLabel={value ? `${label}, ${value}` : label}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, styles.copy]}>{label}</Text>
+      <Text numberOfLines={1} style={[styles.label, styles.copy]}>
+        {label}
+      </Text>
+      {value ? (
+        <Text numberOfLines={1} style={styles.linkValue}>
+          {value}
+        </Text>
+      ) : null}
       <Text style={styles.chevron}>›</Text>
     </Pressable>
   );
@@ -193,6 +201,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   markOn: { color: colors.accent },
+  linkValue: {
+    color: colors.muted,
+    fontSize: type.body,
+    maxWidth: '52%',
+  },
   chevron: { color: colors.muted, fontSize: 22, lineHeight: 22 },
   action: {
     minHeight: 48,

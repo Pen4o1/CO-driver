@@ -13,9 +13,16 @@ type Props = {
   units: UnitSystem;
   onOpen: () => void;
   onFavourite: () => void;
+  onDelete: () => void;
 };
 
-export function RouteLibraryCard({ route, units, onOpen, onFavourite }: Props) {
+export function RouteLibraryCard({
+  route,
+  units,
+  onOpen,
+  onFavourite,
+  onDelete,
+}: Props) {
   const status = useSession((s) => s.status);
   const locked = !canMutateLibrary(status);
   const last = route.lastDrivenAt
@@ -37,6 +44,15 @@ export function RouteLibraryCard({ route, units, onOpen, onFavourite }: Props) {
             {Math.round(route.score)}
           </Text>
           <Text style={styles.meta}>Last driven {last}</Text>
+          <Pressable
+            accessibilityLabel={`Delete ${route.name}`}
+            accessibilityRole="button"
+            disabled={locked}
+            hitSlop={8}
+            onPress={onDelete}
+          >
+            <Text style={[styles.delete, locked && styles.locked]}>Delete</Text>
+          </Pressable>
         </View>
         <Button
           label={route.favourite ? '★' : '☆'}
@@ -62,4 +78,11 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   name: { color: colors.text, fontWeight: '700', fontSize: type.body },
   meta: { color: colors.muted, fontSize: type.caption },
+  delete: {
+    color: colors.danger,
+    fontSize: type.caption,
+    fontWeight: '700',
+    paddingVertical: space.xs,
+  },
+  locked: { opacity: 0.45 },
 });

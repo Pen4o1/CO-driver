@@ -47,7 +47,7 @@ export function CandidateCard({ candidate, selected, onPress }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 280,
+    alignSelf: 'stretch',
     backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,

@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { canMutateLibrary } from '@/core/safety';
+import type { LatLng } from '@/core/types';
 import {
   formatDrivenDistance,
   formatDuration,
@@ -8,7 +10,7 @@ import {
 } from '@/core/units';
 import { RouteSparkline } from '@/features/routing/builder/RouteSparkline';
 import type { DriveHistoryRow } from '@/features/storage';
-import type { LatLng } from '@/core/types';
+import { useSession } from '@/state/session';
 import { Card } from '@/ui/Card';
 import { colors, space, type } from '@/ui/theme';
 
@@ -16,6 +18,7 @@ type Props = {
   drive: DriveHistoryRow;
   units: UnitSystem;
   onOpen: () => void;
+  onDelete: () => void;
 };
 
 function coordsFromGeometryJson(raw: string | null): LatLng[] {
@@ -28,7 +31,8 @@ function coordsFromGeometryJson(raw: string | null): LatLng[] {
   }
 }
 
-export function DriveHistoryCard({ drive, units, onOpen }: Props) {
+export function DriveHistoryCard({ drive, units, onOpen, onDelete }: Props) {
+  const locked = !canMutateLibrary(useSession((s) => s.status));
   const coords = coordsFromGeometryJson(drive.geometryJson);
   const when = new Date(drive.startedAt).toISOString().slice(0, 16);
   const avg = drive.stats?.avgSpeedMps ?? 0;
@@ -51,6 +55,15 @@ export function DriveHistoryCard({ drive, units, onOpen }: Props) {
         <View style={styles.body}>
           <Text style={styles.name}>{drive.routeName}</Text>
           <Text style={styles.meta}>{parts.join(' · ')}</Text>
+          <Pressable
+            accessibilityLabel={`Delete drive of ${drive.routeName}`}
+            accessibilityRole="button"
+            disabled={locked}
+            hitSlop={8}
+            onPress={onDelete}
+          >
+            <Text style={[styles.delete, locked && styles.locked]}>Delete</Text>
+          </Pressable>
         </View>
       </Card>
     </Pressable>
@@ -62,4 +75,11 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   name: { color: colors.text, fontWeight: '700', fontSize: type.body },
   meta: { color: colors.muted, fontSize: type.caption },
+  delete: {
+    color: colors.danger,
+    fontSize: type.caption,
+    fontWeight: '700',
+    paddingVertical: space.xs,
+  },
+  locked: { opacity: 0.45 },
 });

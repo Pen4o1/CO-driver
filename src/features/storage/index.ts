@@ -22,6 +22,7 @@ export type { VoicePrepareRow } from './voicePrepareRepo';
 export {
   appendDriveFix,
   createDrive,
+  deleteDrive,
   finishDrive,
   getDrive,
   listDriveFixes,

@@ -11,11 +11,13 @@ import {
   type Voice,
 } from '@/features/voice';
 import { useSettings } from '@/state/settings';
+import { ListMenu } from '@/ui/ListMenu';
 import { Segmented } from '@/ui/Segmented';
 import {
   SettingAction,
   SettingChoice,
   SettingGroup,
+  SettingLink,
   SettingText,
 } from '@/ui/SettingGroup';
 import { Slider } from '@/ui/Slider';
@@ -27,7 +29,7 @@ const ENGINES: { id: TtsProviderId; label: string }[] = [
   { id: 'http', label: 'Piper' },
 ];
 
-type VoiceScope = 'english' | 'all';
+const VOICE_MENU_AT = 8;
 
 function languageLabel(code: string): string {
   try {
@@ -43,6 +45,13 @@ function voiceDetail(voice: Voice): string {
   return quality ? `${language} · ${quality}` : language;
 }
 
+function compareLanguages(a: string, b: string): number {
+  const aEn = a.toLowerCase().startsWith('en') ? 0 : 1;
+  const bEn = b.toLowerCase().startsWith('en') ? 0 : 1;
+  if (aEn !== bEn) return aEn - bEn;
+  return languageLabel(a).localeCompare(languageLabel(b));
+}
+
 export function VoiceSettingsPanel() {
   const ttsProviderId = useSettings((s) => s.ttsProviderId);
   const voiceId = useSettings((s) => s.voiceId);
@@ -53,8 +62,11 @@ export function VoiceSettingsPanel() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [available, setAvailable] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [scope, setScope] = useState<VoiceScope>('english');
-  const [query, setQuery] = useState('');
+  const [language, setLanguage] = useState<string | null>(null);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [languageQuery, setLanguageQuery] = useState('');
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceQuery, setVoiceQuery] = useState('');
 
   const provider = useMemo(
     () => createTtsProvider(ttsProviderId),
@@ -81,27 +93,66 @@ export function VoiceSettingsPanel() {
     };
   }, [ttsProviderId, patch]);
 
-  const hasOtherLanguages = voices.some(
-    (voice) => !voice.language.toLowerCase().startsWith('en'),
-  );
   const downloaded = voices.filter(
     (voice) => voice.quality === 'premium' || voice.quality === 'enhanced',
   ).length;
+  const activeLanguage = useMemo(() => {
+    if (language && voices.some((voice) => voice.language === language)) {
+      return language;
+    }
+    const selected = voices.find((voice) => voice.id === voiceId);
+    if (selected) return selected.language;
+    const english = voices.find((voice) =>
+      voice.language.toLowerCase().startsWith('en'),
+    );
+    return english?.language ?? voices[0]?.language ?? '';
+  }, [language, voices, voiceId]);
+  const languages = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const voice of voices) {
+      counts.set(voice.language, (counts.get(voice.language) ?? 0) + 1);
+    }
+    return [...counts.keys()].sort(compareLanguages);
+  }, [voices]);
+  const inLanguage = useMemo(
+    () => voices.filter((voice) => voice.language === activeLanguage),
+    [voices, activeLanguage],
+  );
   const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return voices.filter((voice) => {
-      if (
-        scope === 'english' &&
-        !voice.language.toLowerCase().startsWith('en')
-      ) {
-        return false;
-      }
-      if (!q) return true;
+    const q = voiceQuery.trim().toLowerCase();
+    if (!q) return inLanguage;
+    return inLanguage.filter((voice) => {
       const haystack =
         `${voice.name} ${voice.language} ${voiceDetail(voice)}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [voices, scope, query]);
+  }, [inLanguage, voiceQuery]);
+  const languageRows = useMemo(() => {
+    const q = languageQuery.trim().toLowerCase();
+    return languages
+      .filter((code) => {
+        if (!q) return true;
+        return `${languageLabel(code)} ${code}`.toLowerCase().includes(q);
+      })
+      .map((code) => {
+        const count = voices.filter((voice) => voice.language === code).length;
+        return {
+          id: code,
+          label: languageLabel(code),
+          detail: `${count} voice${count === 1 ? '' : 's'}`,
+        };
+      });
+  }, [languages, languageQuery, voices]);
+  const voiceRows = useMemo(
+    () =>
+      shown.map((voice) => ({
+        id: voice.id,
+        label: voice.name,
+        detail: ttsProviderId === 'device' ? voiceDetail(voice) : undefined,
+      })),
+    [shown, ttsProviderId],
+  );
+  const currentVoice = inLanguage.find((voice) => voice.id === voiceId);
 
   const availability = available
     ? provider.canPrerender
@@ -135,47 +186,96 @@ export function VoiceSettingsPanel() {
         />
       </SettingGroup>
       <SettingGroup title="Voice" footer={voiceFooter}>
-        {voices.length > 0 &&
-        (hasOtherLanguages || ttsProviderId === 'device') ? (
-          <View style={styles.filter}>
-            {hasOtherLanguages ? (
-              <Segmented
-                bare
-                accessibilityLabel="Voice languages"
-                value={scope}
-                options={[
-                  { id: 'english', label: 'English' },
-                  { id: 'all', label: 'All' },
-                ]}
-                onChange={setScope}
+        {voices.length === 0 ? (
+          <SettingText label="No voices available." />
+        ) : (
+          <>
+            {languages.length > 1 ? (
+              <SettingLink
+                label="Language"
+                value={languageLabel(activeLanguage)}
+                onPress={() => {
+                  setLanguageQuery('');
+                  setLanguageOpen(true);
+                }}
               />
             ) : null}
-            <TextField
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search voices"
-              autoCorrect={false}
-              autoCapitalize="none"
-              clearButtonMode="while-editing"
-            />
-          </View>
-        ) : null}
-        {shown.length === 0 ? (
-          <SettingText label="No voices match." />
-        ) : (
-          shown.map((voice) => (
-            <SettingChoice
-              key={voice.id}
-              label={voice.name}
-              detail={
-                ttsProviderId === 'device' ? voiceDetail(voice) : undefined
-              }
-              selected={voiceId === voice.id}
-              onPress={() => patch({ voiceId: voice.id })}
-            />
-          ))
+            {inLanguage.length > VOICE_MENU_AT ? (
+              <SettingLink
+                label="Voice"
+                value={currentVoice?.name ?? 'Choose'}
+                onPress={() => {
+                  setVoiceQuery('');
+                  setVoiceOpen(true);
+                }}
+              />
+            ) : (
+              <>
+                {inLanguage.length > 5 ? (
+                  <View style={styles.filter}>
+                    <TextField
+                      value={voiceQuery}
+                      onChangeText={setVoiceQuery}
+                      placeholder="Search voices"
+                      autoCorrect={false}
+                      autoCapitalize="none"
+                      clearButtonMode="while-editing"
+                    />
+                  </View>
+                ) : null}
+                {shown.length === 0 ? (
+                  <SettingText label="No voices match." />
+                ) : (
+                  shown.map((voice) => (
+                    <SettingChoice
+                      key={voice.id}
+                      label={voice.name}
+                      detail={
+                        ttsProviderId === 'device'
+                          ? voiceDetail(voice)
+                          : undefined
+                      }
+                      selected={voiceId === voice.id}
+                      onPress={() => patch({ voiceId: voice.id })}
+                    />
+                  ))
+                )}
+              </>
+            )}
+          </>
         )}
       </SettingGroup>
+      <ListMenu
+        visible={languageOpen}
+        title="Language"
+        query={languageQuery}
+        onQueryChange={setLanguageQuery}
+        searchPlaceholder="Search languages"
+        rows={languageRows}
+        selectedId={activeLanguage}
+        emptyLabel="No languages match."
+        onClose={() => setLanguageOpen(false)}
+        onSelect={(code) => {
+          setLanguage(code);
+          setVoiceQuery('');
+          setLanguageOpen(false);
+        }}
+      />
+      <ListMenu
+        visible={voiceOpen}
+        title={languageLabel(activeLanguage) || 'Voice'}
+        query={voiceQuery}
+        onQueryChange={setVoiceQuery}
+        searchPlaceholder="Search voices"
+        rows={voiceRows}
+        selectedId={voiceId}
+        emptyLabel="No voices match."
+        onClose={() => setVoiceOpen(false)}
+        onSelect={(id) => {
+          patch({ voiceId: id });
+          setVoiceOpen(false);
+        }}
+      />
       <SettingGroup
         title="Other audio"
         footer="Duck lowers other audio while a call plays. Pause stops it."

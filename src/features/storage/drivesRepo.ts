@@ -80,6 +80,14 @@ export async function getDrive(id: string): Promise<DriveRow | null> {
   };
 }
 
+export async function deleteDrive(id: string): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM drive_fixes WHERE drive_id = ?', [id]);
+    await db.runAsync('DELETE FROM drives WHERE id = ?', [id]);
+  });
+}
+
 export async function listDriveFixes(driveId: string): Promise<GeoFix[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{
