@@ -33,9 +33,21 @@ import { colors, space, type } from '@/ui/theme';
 const PREVIEW = 3;
 const PAGE = 15;
 
+type LibraryList = 'routes' | 'drives';
+
 function matchesQuery(query: string, haystack: string): boolean {
   const q = query.trim().toLowerCase();
   return q.length === 0 || haystack.toLowerCase().includes(q);
+}
+
+function toggleIds(current: ReadonlySet<string>, ids: string[]): Set<string> {
+  const next = new Set(current);
+  const allOn = ids.length > 0 && ids.every((id) => next.has(id));
+  for (const id of ids) {
+    if (allOn) next.delete(id);
+    else next.add(id);
+  }
+  return next;
 }
 
 export default function HomeScreen() {
@@ -46,9 +58,11 @@ export default function HomeScreen() {
   const [drives, setDrives] = useState<DriveHistoryRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [browser, setBrowser] = useState<'routes' | 'drives' | null>(null);
+  const [browser, setBrowser] = useState<LibraryList | null>(null);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(PAGE);
+  const [picking, setPicking] = useState<LibraryList | null>(null);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   const reload = useCallback(() => {
     listRoutes()
@@ -87,7 +101,7 @@ export default function HomeScreen() {
   const drivePreview =
     drives.length > PREVIEW ? drives.slice(0, PREVIEW) : drives;
 
-  const openBrowser = (which: 'routes' | 'drives') => {
+  const openBrowser = (which: LibraryList) => {
     setQuery('');
     setPage(PAGE);
     setBrowser(which);
@@ -98,33 +112,123 @@ export default function HomeScreen() {
     setPage(PAGE);
   };
 
-  const confirmDeleteRoute = (route: RouteSummary) => {
+  const stopPicking = () => {
+    setPicking(null);
+    setSelected(new Set());
+  };
+
+  const beginPicking = (which: LibraryList) => {
     if (locked) return;
-    Alert.alert('Delete route', `Delete ${route.name}?`, [
+    setSelected(new Set());
+    setPicking(which);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (locked || !picking || selected.size === 0) return;
+    const ids = [...selected];
+    const kind = picking === 'routes' ? 'route' : 'drive';
+    const title =
+      ids.length === 1 ? `Delete ${kind}` : `Delete ${ids.length} ${kind}s`;
+    Alert.alert(title, `${title}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          void deleteRoutePack(route.id);
-          void deleteRoute(route.id).then(reload);
+          const removingRoutes = picking === 'routes';
+          const remove = async () => {
+            for (const id of ids) {
+              if (removingRoutes) {
+                void deleteRoutePack(id);
+                await deleteRoute(id);
+              } else {
+                await deleteDrive(id);
+              }
+            }
+          };
+          void remove().finally(() => {
+            stopPicking();
+            reload();
+          });
         },
       },
     ]);
   };
 
-  const confirmDeleteDrive = (drive: DriveHistoryRow) => {
-    if (locked) return;
-    Alert.alert('Delete drive', `Delete this drive of ${drive.routeName}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void deleteDrive(drive.id).then(reload);
-        },
-      },
-    ]);
+  const listIds = (which: LibraryList, inBrowser: boolean): string[] => {
+    if (which === 'routes') {
+      const rows = inBrowser ? filteredRoutes : routePreview;
+      return rows.map((route) => route.id);
+    }
+    const rows = inBrowser ? filteredDrives : drivePreview;
+    return rows.map((drive) => drive.id);
+  };
+
+  const pickBar = (which: LibraryList, inBrowser: boolean) => {
+    if (picking !== which) return null;
+    const ids = listIds(which, inBrowser);
+    const allOn = ids.length > 0 && ids.every((id) => selected.has(id));
+    const count = selected.size;
+    const noun = which === 'routes' ? 'routes' : 'drives';
+    return (
+      <View style={styles.pickBar}>
+        <Pressable
+          accessibilityLabel="Cancel selection"
+          accessibilityRole="button"
+          onPress={stopPicking}
+          style={styles.sectionAction}
+        >
+          <Text style={styles.browseText}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={allOn ? `Clear ${noun}` : `Select all ${noun}`}
+          accessibilityRole="button"
+          onPress={() =>
+            setSelected((current) =>
+              allOn ? new Set() : toggleIds(current, ids),
+            )
+          }
+          style={styles.sectionAction}
+        >
+          <Text style={styles.browseText}>{allOn ? 'None' : 'All'}</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={count === 0 ? 'Delete' : `Delete ${count}`}
+          accessibilityRole="button"
+          disabled={count === 0}
+          onPress={confirmDeleteSelected}
+          style={styles.sectionAction}
+        >
+          <Text style={[styles.deleteText, count === 0 && styles.dimmed]}>
+            {count === 0 ? 'Delete' : `Delete ${count}`}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const selectButton = (which: LibraryList) => {
+    const count = which === 'routes' ? routes.length : drives.length;
+    if (locked || count === 0 || picking === which) return null;
+    const noun = which === 'routes' ? 'routes' : 'drives';
+    return (
+      <Pressable
+        accessibilityLabel={`Select ${noun}`}
+        accessibilityRole="button"
+        onPress={() => beginPicking(which)}
+        style={styles.sectionAction}
+      >
+        <Text style={styles.browseText}>Select</Text>
+      </Pressable>
+    );
+  };
+
+  const listToolbar = (which: LibraryList) => {
+    if (locked || (which === 'routes' ? routes.length : drives.length) === 0) {
+      return undefined;
+    }
+    if (picking === which) return pickBar(which, true);
+    return <View style={styles.selectRow}>{selectButton(which)}</View>;
   };
 
   return (
@@ -154,7 +258,11 @@ export default function HomeScreen() {
         }}
       />
       {importError ? <Text style={styles.error}>{importError}</Text> : null}
-      <Text style={styles.heading}>Library · {routes.length}</Text>
+      <View style={styles.sectionHead}>
+        <Text style={styles.heading}>Library · {routes.length}</Text>
+        {selectButton('routes')}
+      </View>
+      {pickBar('routes', false)}
       {routes.length === 0 ? (
         <Text style={styles.body}>No saved routes yet.</Text>
       ) : (
@@ -163,11 +271,15 @@ export default function HomeScreen() {
             key={route.id}
             route={route}
             units={units}
+            selecting={picking === 'routes'}
+            selected={selected.has(route.id)}
+            onToggle={() =>
+              setSelected((current) => toggleIds(current, [route.id]))
+            }
             onOpen={() => router.push(`/route/${route.id}`)}
             onFavourite={() => {
               void setRouteFavourite(route.id, !route.favourite).then(reload);
             }}
-            onDelete={() => confirmDeleteRoute(route)}
           />
         ))
       )}
@@ -181,7 +293,11 @@ export default function HomeScreen() {
           <Text style={styles.browseText}>Browse all {routes.length}</Text>
         </Pressable>
       ) : null}
-      <Text style={styles.heading}>History · {drives.length}</Text>
+      <View style={styles.sectionHead}>
+        <Text style={styles.heading}>History · {drives.length}</Text>
+        {selectButton('drives')}
+      </View>
+      {pickBar('drives', false)}
       {drives.length === 0 ? (
         <Text style={styles.body}>No drives recorded yet.</Text>
       ) : (
@@ -190,10 +306,14 @@ export default function HomeScreen() {
             key={drive.id}
             drive={drive}
             units={units}
+            selecting={picking === 'drives'}
+            selected={selected.has(drive.id)}
+            onToggle={() =>
+              setSelected((current) => toggleIds(current, [drive.id]))
+            }
             onOpen={() =>
               router.push(`/drive/${drive.routeId}/summary?driveId=${drive.id}`)
             }
-            onDelete={() => confirmDeleteDrive(drive)}
           />
         ))
       )}
@@ -214,6 +334,7 @@ export default function HomeScreen() {
         onQueryChange={onQuery}
         searchPlaceholder="Search routes"
         onClose={() => setBrowser(null)}
+        toolbar={listToolbar('routes')}
       >
         {filteredRoutes.length === 0 ? (
           <Text style={styles.body}>No routes match.</Text>
@@ -223,6 +344,11 @@ export default function HomeScreen() {
               key={route.id}
               route={route}
               units={units}
+              selecting={picking === 'routes'}
+              selected={selected.has(route.id)}
+              onToggle={() =>
+                setSelected((current) => toggleIds(current, [route.id]))
+              }
               onOpen={() => {
                 setBrowser(null);
                 router.push(`/route/${route.id}`);
@@ -230,7 +356,6 @@ export default function HomeScreen() {
               onFavourite={() => {
                 void setRouteFavourite(route.id, !route.favourite).then(reload);
               }}
-              onDelete={() => confirmDeleteRoute(route)}
             />
           ))
         )}
@@ -254,6 +379,7 @@ export default function HomeScreen() {
         onQueryChange={onQuery}
         searchPlaceholder="Search drives"
         onClose={() => setBrowser(null)}
+        toolbar={listToolbar('drives')}
       >
         {filteredDrives.length === 0 ? (
           <Text style={styles.body}>No drives match.</Text>
@@ -263,13 +389,17 @@ export default function HomeScreen() {
               key={drive.id}
               drive={drive}
               units={units}
+              selecting={picking === 'drives'}
+              selected={selected.has(drive.id)}
+              onToggle={() =>
+                setSelected((current) => toggleIds(current, [drive.id]))
+              }
               onOpen={() => {
                 setBrowser(null);
                 router.push(
                   `/drive/${drive.routeId}/summary?driveId=${drive.id}`,
                 );
               }}
-              onDelete={() => confirmDeleteDrive(drive)}
             />
           ))
         )}
@@ -308,12 +438,38 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   title: { fontSize: type.title, fontWeight: '700', color: colors.text },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: space.sm,
+  },
   heading: {
     color: colors.text,
     fontSize: type.body,
     fontWeight: '700',
-    marginTop: space.sm,
   },
+  sectionAction: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: space.sm,
+  },
+  pickBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  deleteText: {
+    color: colors.danger,
+    fontSize: type.body,
+    fontWeight: '700',
+  },
+  dimmed: { opacity: 0.45 },
   body: { color: colors.muted },
   error: { color: colors.danger },
   meta: { color: colors.muted, fontSize: type.caption },

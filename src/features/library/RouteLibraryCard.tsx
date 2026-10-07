@@ -8,12 +8,16 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { colors, space, type } from '@/ui/theme';
 
+import { SelectMark } from './SelectMark';
+
 type Props = {
   route: RouteSummary;
   units: UnitSystem;
   onOpen: () => void;
   onFavourite: () => void;
-  onDelete: () => void;
+  selecting?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
 };
 
 export function RouteLibraryCard({
@@ -21,48 +25,45 @@ export function RouteLibraryCard({
   units,
   onOpen,
   onFavourite,
-  onDelete,
+  selecting = false,
+  selected = false,
+  onToggle,
 }: Props) {
   const status = useSession((s) => s.status);
   const locked = !canMutateLibrary(status);
   const last = route.lastDrivenAt
     ? new Date(route.lastDrivenAt).toISOString().slice(0, 10)
     : 'never driven';
+  const distance = formatDistanceKm(route.lengthM, units);
 
   return (
     <Card>
       <Pressable
-        accessibilityLabel={`${route.name}, ${formatDistanceKm(route.lengthM, units)}`}
-        accessibilityRole="button"
-        onPress={onOpen}
+        accessibilityLabel={`${route.name}, ${distance}`}
+        accessibilityRole={selecting ? 'checkbox' : 'button'}
+        accessibilityState={selecting ? { checked: selected } : undefined}
+        onPress={selecting ? onToggle : onOpen}
         style={styles.row}
       >
+        {selecting ? <SelectMark selected={selected} /> : null}
         <View style={styles.body}>
           <Text style={styles.name}>{route.name}</Text>
           <Text style={styles.meta}>
-            {formatDistanceKm(route.lengthM, units)} · {route.profileId} · score{' '}
-            {Math.round(route.score)}
+            {distance} · {route.profileId} · score {Math.round(route.score)}
           </Text>
           <Text style={styles.meta}>Last driven {last}</Text>
-          <Pressable
-            accessibilityLabel={`Delete ${route.name}`}
-            accessibilityRole="button"
-            disabled={locked}
-            hitSlop={8}
-            onPress={onDelete}
-          >
-            <Text style={[styles.delete, locked && styles.locked]}>Delete</Text>
-          </Pressable>
         </View>
-        <Button
-          label={route.favourite ? '★' : '☆'}
-          variant="ghost"
-          accessibilityLabel={
-            route.favourite ? 'Remove favourite' : 'Add favourite'
-          }
-          disabled={locked}
-          onPress={onFavourite}
-        />
+        {selecting ? null : (
+          <Button
+            label={route.favourite ? '★' : '☆'}
+            variant="ghost"
+            accessibilityLabel={
+              route.favourite ? 'Remove favourite' : 'Add favourite'
+            }
+            disabled={locked}
+            onPress={onFavourite}
+          />
+        )}
       </Pressable>
     </Card>
   );
@@ -78,11 +79,4 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   name: { color: colors.text, fontWeight: '700', fontSize: type.body },
   meta: { color: colors.muted, fontSize: type.caption },
-  delete: {
-    color: colors.danger,
-    fontSize: type.caption,
-    fontWeight: '700',
-    paddingVertical: space.xs,
-  },
-  locked: { opacity: 0.45 },
 });

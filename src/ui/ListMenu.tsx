@@ -30,6 +30,7 @@ type Props = {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   emptyLabel?: string;
+  toolbar?: ReactNode;
   children?: ReactNode;
 };
 
@@ -44,6 +45,7 @@ export function ListMenu({
   selectedId,
   onSelect,
   emptyLabel = 'Nothing matches.',
+  toolbar,
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -86,6 +88,7 @@ export function ListMenu({
             clearButtonMode="while-editing"
           />
         ) : null}
+        {toolbar}
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.list}
