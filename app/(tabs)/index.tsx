@@ -277,6 +277,7 @@ export default function HomeScreen() {
               setSelected((current) => toggleIds(current, [route.id]))
             }
             onOpen={() => router.push(`/route/${route.id}`)}
+            onEdit={() => router.push(`/route/${route.id}/edit`)}
             onFavourite={() => {
               void setRouteFavourite(route.id, !route.favourite).then(reload);
             }}
@@ -352,6 +353,10 @@ export default function HomeScreen() {
               onOpen={() => {
                 setBrowser(null);
                 router.push(`/route/${route.id}`);
+              }}
+              onEdit={() => {
+                setBrowser(null);
+                router.push(`/route/${route.id}/edit`);
               }}
               onFavourite={() => {
                 void setRouteFavourite(route.id, !route.favourite).then(reload);

@@ -6,6 +6,7 @@ import { useSettings } from '@/state/settings';
 
 export async function runCandidateSearch(): Promise<void> {
   const draft = useRouteDraft.getState();
+  const revision = draft.revision;
   if (!draft.start) {
     draft.setErrorMessage('Set a start pin first.');
     return;
@@ -14,36 +15,39 @@ export async function runCandidateSearch(): Promise<void> {
     draft.setErrorMessage('Set an end pin first.');
     return;
   }
+  const request = {
+    start: draft.start,
+    end: draft.end,
+    mode: draft.mode,
+    loopDistanceKm: draft.loopDistanceKm,
+    profileId: draft.profileId,
+    custom: draft.custom,
+    preferId: useSettings.getState().providerId,
+  };
   draft.setIsRouting(true);
   draft.setErrorMessage(null);
+  const stillCurrent = () => useRouteDraft.getState().revision === revision;
   try {
     const registry = getProviderRegistry();
-    const preferId = useSettings.getState().providerId;
-    const candidates = await generateCandidates(
-      {
-        start: draft.start,
-        end: draft.end,
-        mode: draft.mode,
-        loopDistanceKm: draft.loopDistanceKm,
-        profileId: draft.profileId,
-        custom: draft.custom,
-        preferId,
-      },
-      {
-        ors: registry.get('ors'),
-        valhalla: registry.get('valhalla'),
-        mock: registry.get('mock'),
-        snap: getRoadSnapper(),
-      },
-    );
-    draft.setCandidates(candidates);
-    draft.setStep(3);
+    const candidates = await generateCandidates(request, {
+      ors: registry.get('ors'),
+      valhalla: registry.get('valhalla'),
+      mock: registry.get('mock'),
+      snap: getRoadSnapper(),
+    });
+    const latest = useRouteDraft.getState();
+    if (latest.revision !== revision) return;
+    latest.setCandidates(candidates);
+    latest.setStep(3);
   } catch (caught) {
-    draft.setCandidates([]);
-    draft.setErrorMessage(
+    const latest = useRouteDraft.getState();
+    if (latest.revision !== revision) return;
+    latest.setCandidates([]);
+    latest.setErrorMessage(
       isAppError(caught) ? caught.message : 'Routing failed.',
     );
   } finally {
-    draft.setIsRouting(false);
+    if (!stillCurrent()) return;
+    useRouteDraft.getState().setIsRouting(false);
   }
 }

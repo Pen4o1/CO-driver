@@ -18,6 +18,7 @@ export type RouteSummary = {
   id: string;
   name: string;
   lengthM: number;
+  durationS: number;
   createdAt: number;
   profileId: RouteStyle;
   score: number;
@@ -97,6 +98,41 @@ export async function saveRoute(input: {
   return id;
 }
 
+export async function updateRoute(
+  id: string,
+  input: { candidate: RouteCandidate; name?: string },
+): Promise<void> {
+  const db = await getDb();
+  const result = await db.runAsync(
+    `UPDATE routes SET
+       name = COALESCE(?, name),
+       profile_id = ?,
+       geometry_json = ?,
+       steps_json = ?,
+       breakdown_json = ?,
+       candidate_json = ?,
+       length_m = ?,
+       duration_s = ?,
+       bbox = ?
+     WHERE id = ?`,
+    [
+      input.name ?? null,
+      input.candidate.profileId,
+      JSON.stringify(geometryToJson(input.candidate.geometry)),
+      JSON.stringify(input.candidate.steps),
+      JSON.stringify(input.candidate.breakdown),
+      candidateToJson(input.candidate),
+      input.candidate.geometry.lengthM,
+      input.candidate.breakdown.durationS,
+      JSON.stringify(input.candidate.geometry.bbox),
+      id,
+    ],
+  );
+  if (result.changes === 0) {
+    throw new Error('Route not found');
+  }
+}
+
 function mapRow(row: {
   id: string;
   name: string;
@@ -144,13 +180,14 @@ export async function listRoutes(): Promise<RouteSummary[]> {
     id: string;
     name: string;
     length_m: number;
+    duration_s: number;
     created_at: number;
     profile_id: string;
     breakdown_json: string;
     favourite: number;
     last_driven: number | null;
   }>(
-    `SELECT r.id, r.name, r.length_m, r.created_at, r.profile_id,
+    `SELECT r.id, r.name, r.length_m, r.duration_s, r.created_at, r.profile_id,
             r.breakdown_json, r.favourite,
             (SELECT MAX(d.started_at) FROM drives d WHERE d.route_id = r.id)
               AS last_driven
@@ -169,6 +206,7 @@ export async function listRoutes(): Promise<RouteSummary[]> {
       id: row.id,
       name: row.name,
       lengthM: row.length_m,
+      durationS: row.duration_s,
       createdAt: row.created_at,
       profileId: row.profile_id as RouteStyle,
       score,

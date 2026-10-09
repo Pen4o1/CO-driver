@@ -13,6 +13,7 @@ type Props = {
   onRename: (name: string) => void;
   onNote: (note: string) => void;
   onDuplicate: () => void;
+  onChangeRoad: () => void;
   onDelete: () => void;
 };
 
@@ -22,6 +23,7 @@ export function RouteMetaEditor({
   onRename,
   onNote,
   onDuplicate,
+  onChangeRoad,
   onDelete,
 }: Props) {
   const locked = !canMutateLibrary(useSession((s) => s.status));
@@ -57,6 +59,12 @@ export function RouteMetaEditor({
         variant="secondary"
         disabled={locked}
         onPress={() => onNote(draftNote)}
+      />
+      <Button
+        label="Edit the road"
+        variant="secondary"
+        disabled={locked}
+        onPress={onChangeRoad}
       />
       <Button
         label="Duplicate"

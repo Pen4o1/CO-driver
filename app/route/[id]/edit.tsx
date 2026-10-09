@@ -74,6 +74,9 @@ export default function EditRouteScreen() {
                 if (copyId) router.replace(`/route/${copyId}`);
               });
             }}
+            onChangeRoad={() => {
+              router.push(`/route/new?editId=${routeId}`);
+            }}
             onDelete={() => {
               if (locked) return;
               Alert.alert('Delete route', `Delete ${name}?`, [

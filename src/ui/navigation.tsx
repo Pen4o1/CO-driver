@@ -10,14 +10,22 @@ export function leave(router: ImperativeRouter) {
   else router.replace('/');
 }
 
-export function HeaderBack() {
+type HeaderBackProps = {
+  onPress?: () => void;
+  accessibilityLabel?: string;
+};
+
+export function HeaderBack({
+  onPress,
+  accessibilityLabel = 'Back',
+}: HeaderBackProps = {}) {
   const router = useRouter();
-  if (!router.canGoBack()) return null;
+  if (!onPress && !router.canGoBack()) return null;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back"
-      onPress={() => router.back()}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress ?? (() => router.back())}
       hitSlop={10}
       style={styles.hit}
     >

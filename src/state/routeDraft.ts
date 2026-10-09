@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { haversineM } from '@/core/geo';
 import type { CustomProfileInput } from '@/core/routing';
 import type { LatLng, RouteCandidate, RouteStyle } from '@/core/types';
 
@@ -32,6 +33,10 @@ type RouteDraftState = {
   candidates: RouteCandidate[];
   errorMessage: string | null;
   isRouting: boolean;
+  /** Set while changing a route that is already in the library. */
+  editingId: string | null;
+  /** Bumped whenever the draft is cleared or replaced, so in-flight searches can bail out. */
+  revision: number;
   setStart: (point: LatLng, label?: string) => void;
   setEnd: (point: LatLng, label?: string) => void;
   setActivePin: (pin: PinTarget) => void;
@@ -46,23 +51,50 @@ type RouteDraftState = {
   setErrorMessage: (message: string | null) => void;
   setIsRouting: (isRouting: boolean) => void;
   placeOnMap: (point: LatLng) => void;
+  loadForEdit: (input: { id: string; candidate: RouteCandidate }) => void;
+  reset: () => void;
 };
 
+const LOOP_CLOSE_M = 100;
+
+function nearestLoopKm(lengthM: number): 30 | 60 | 100 {
+  const km = lengthM / 1000;
+  if (km < 45) return 30;
+  if (km < 80) return 60;
+  return 100;
+}
+
+function blankDraft(revision: number) {
+  return {
+    start: null,
+    end: null,
+    startLabel: null,
+    endLabel: null,
+    activePin: 'start' as const,
+    step: 1 as const,
+    mode: 'ab' as const,
+    loopDistanceKm: 60 as const,
+    profileId: 'twist' as const,
+    custom: DEFAULT_CUSTOM,
+    candidate: null,
+    candidates: [] as RouteCandidate[],
+    errorMessage: null,
+    isRouting: false,
+    editingId: null,
+    revision,
+  };
+}
+
+export function draftIsDirty(state: {
+  editingId: string | null;
+  start: LatLng | null;
+  candidates: readonly RouteCandidate[];
+}): boolean {
+  return Boolean(state.editingId || state.start || state.candidates.length > 0);
+}
+
 export const useRouteDraft = create<RouteDraftState>((set, get) => ({
-  start: null,
-  end: null,
-  startLabel: null,
-  endLabel: null,
-  activePin: 'start',
-  step: 1,
-  mode: 'ab',
-  loopDistanceKm: 60,
-  profileId: 'twist',
-  custom: DEFAULT_CUSTOM,
-  candidate: null,
-  candidates: [],
-  errorMessage: null,
-  isRouting: false,
+  ...blankDraft(0),
   setStart: (start, startLabel) =>
     set({ start, startLabel: startLabel ?? null }),
   setEnd: (end, endLabel) => set({ end, endLabel: endLabel ?? null }),
@@ -81,6 +113,25 @@ export const useRouteDraft = create<RouteDraftState>((set, get) => ({
   },
   setErrorMessage: (errorMessage) => set({ errorMessage }),
   setIsRouting: (isRouting) => set({ isRouting }),
+  loadForEdit: ({ id, candidate }) => {
+    const coords = candidate.geometry.coords;
+    const start = coords[0] ?? null;
+    const end = coords[coords.length - 1] ?? null;
+    const loop = Boolean(start && end && haversineM(start, end) < LOOP_CLOSE_M);
+    set({
+      ...blankDraft(get().revision + 1),
+      editingId: id,
+      start,
+      end: loop ? null : end,
+      step: start ? 3 : 1,
+      mode: loop ? 'loop' : 'ab',
+      loopDistanceKm: nearestLoopKm(candidate.geometry.lengthM),
+      profileId: candidate.profileId,
+      candidate,
+      candidates: [candidate],
+    });
+  },
+  reset: () => set(blankDraft(get().revision + 1)),
   placeOnMap: (point) => {
     const { activePin, mode } = get();
     if (activePin === 'start' || mode === 'loop') {

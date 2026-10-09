@@ -15,6 +15,7 @@ export {
   saveRoute,
   setRouteFavourite,
   setRouteNote,
+  updateRoute,
 } from './routesRepo';
 export type { RouteSummary, SavedRouteRow } from './routesRepo';
 export { getVoicePrepare, saveVoicePrepare } from './voicePrepareRepo';

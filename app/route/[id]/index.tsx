@@ -4,7 +4,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RouteCandidate } from '@/core/types';
-import { formatDistanceKm } from '@/core/units';
+import { formatDistanceKm, formatDuration } from '@/core/units';
 import { OfflinePackCard } from '@/features/maps/OfflinePackCard';
 import { RouteMap } from '@/features/maps/RouteMap';
 import { getRoute } from '@/features/storage';
@@ -104,8 +104,11 @@ export default function RouteDetailsScreen() {
             <Text style={styles.title} numberOfLines={1}>
               {name}
             </Text>
-            <Text style={styles.body} numberOfLines={1}>
+            <Text style={styles.body} numberOfLines={2}>
               {formatDistanceKm(candidate.geometry.lengthM, units)}
+              {candidate.breakdown.durationS > 0
+                ? ` · est. ${formatDuration(candidate.breakdown.durationS)}`
+                : ''}
               {candidate.providerId === 'gpx'
                 ? ' · Uploaded track'
                 : ` · score ${Math.round(candidate.breakdown.score)}`}

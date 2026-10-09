@@ -1,6 +1,7 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -15,18 +16,25 @@ import { ResultsStep } from '@/features/routing/builder/ResultsStep';
 import { StyleStep } from '@/features/routing/builder/StyleStep';
 import { runCandidateSearch } from '@/features/routing/runCandidateSearch';
 import { RouteMap } from '@/features/maps/RouteMap';
-import { saveRoute } from '@/features/storage';
-import { useRouteDraft } from '@/state/routeDraft';
+import { getRoute, saveRoute, updateRoute } from '@/features/storage';
+import { draftIsDirty, useRouteDraft } from '@/state/routeDraft';
 import { useSettings } from '@/state/settings';
+import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { leave, NavRow } from '@/ui/navigation';
+import { HeaderBack, leave, NavRow } from '@/ui/navigation';
 import { Sheet } from '@/ui/Sheet';
 import { colors, space } from '@/ui/theme';
 
+function oneParam(value: string | string[] | undefined): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
 export default function NewRouteScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const editId = oneParam(useLocalSearchParams<{ editId?: string }>().editId);
   const start = useRouteDraft((s) => s.start);
   const end = useRouteDraft((s) => s.end);
   const step = useRouteDraft((s) => s.step);
@@ -35,9 +43,7 @@ export default function NewRouteScreen() {
   const candidates = useRouteDraft((s) => s.candidates);
   const errorMessage = useRouteDraft((s) => s.errorMessage);
   const isRouting = useRouteDraft((s) => s.isRouting);
-  const startLabel = useRouteDraft((s) => s.startLabel);
-  const endLabel = useRouteDraft((s) => s.endLabel);
-  const loopDistanceKm = useRouteDraft((s) => s.loopDistanceKm);
+  const editingId = useRouteDraft((s) => s.editingId);
   const setStart = useRouteDraft((s) => s.setStart);
   const setEnd = useRouteDraft((s) => s.setEnd);
   const setStep = useRouteDraft((s) => s.setStep);
@@ -46,28 +52,121 @@ export default function NewRouteScreen() {
   const defaultProfileId = useSettings((s) => s.defaultProfileId);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const leavingRef = useRef(false);
+  const closedRef = useRef(false);
 
   useEffect(() => {
+    if (editId) return;
+    useRouteDraft.getState().reset();
+  }, [editId]);
+
+  useEffect(() => {
+    if (editId || useRouteDraft.getState().editingId) return;
     setProfileId(defaultProfileId);
-  }, [defaultProfileId, setProfileId]);
+  }, [defaultProfileId, editId, setProfileId]);
+
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    getRoute(editId)
+      .then((row) => {
+        if (cancelled || closedRef.current) return;
+        if (!row) {
+          setSaveError('Route not found');
+          return;
+        }
+        useRouteDraft.getState().loadForEdit({
+          id: row.id,
+          candidate: row.candidate,
+        });
+      })
+      .catch((caught: unknown) => {
+        if (cancelled || closedRef.current) return;
+        setSaveError(caught instanceof Error ? caught.message : 'Load failed');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
+
+  useEffect(() => {
+    return navigation.addListener('beforeRemove', (event) => {
+      if (leavingRef.current) return;
+      const draft = useRouteDraft.getState();
+      if (!draftIsDirty(draft)) {
+        closedRef.current = true;
+        draft.reset();
+        return;
+      }
+      event.preventDefault();
+      Alert.alert(
+        draft.editingId ? 'Discard changes?' : 'Discard this route?',
+        draft.editingId
+          ? 'The saved route stays as it is.'
+          : 'It will not be added to your library.',
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              leavingRef.current = true;
+              closedRef.current = true;
+              useRouteDraft.getState().reset();
+              navigation.dispatch(event.data.action);
+            },
+          },
+        ],
+      );
+    });
+  }, [navigation]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: editId ? 'Edit route' : 'New route',
+      headerLeft: () => (
+        <HeaderBack
+          accessibilityLabel={editId ? 'Cancel editing' : 'Back to home'}
+          onPress={() => leave(router)}
+        />
+      ),
+    });
+  }, [navigation, editId, router]);
 
   const save = async () => {
-    if (!candidate) return;
+    const current = useRouteDraft.getState();
+    if (!current.candidate) return;
     setSaving(true);
     setSaveError(null);
     try {
+      if (current.editingId) {
+        const id = current.editingId;
+        await updateRoute(id, { candidate: current.candidate });
+        leavingRef.current = true;
+        closedRef.current = true;
+        useRouteDraft.getState().reset();
+        router.dismissTo(`/route/${id}`);
+        return;
+      }
       const name =
-        mode === 'loop'
-          ? `Loop ${loopDistanceKm} km`
-          : `${startLabel ?? 'Start'} → ${endLabel ?? 'End'}`;
-      const id = await saveRoute({ name, candidate });
-      router.push(`/route/${id}`);
+        current.mode === 'loop'
+          ? `Loop ${current.loopDistanceKm} km`
+          : `${current.startLabel ?? 'Start'} → ${current.endLabel ?? 'End'}`;
+      const id = await saveRoute({ name, candidate: current.candidate });
+      leavingRef.current = true;
+      closedRef.current = true;
+      useRouteDraft.getState().reset();
+      router.replace(`/route/${id}`);
     } catch (caught) {
+      leavingRef.current = false;
+      closedRef.current = false;
       setSaveError(caught instanceof Error ? caught.message : 'Save failed');
     } finally {
       setSaving(false);
     }
   };
+
+  const exitLabel = editId ? 'Cancel' : 'Home';
 
   if (Platform.OS === 'web') {
     return (
@@ -76,7 +175,7 @@ export default function NewRouteScreen() {
           MapLibre needs the iOS or Android dev client. Expo Go and web are not
           supported. See MAP_SETUP.md.
         </Text>
-        <NavRow onBack={() => leave(router)} />
+        <NavRow onBack={() => leave(router)} backLabel={exitLabel} />
       </View>
     );
   }
@@ -130,9 +229,17 @@ export default function NewRouteScreen() {
                 <Text style={styles.error}>{errorMessage}</Text>
               ) : null}
               {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
+              {step > 1 ? (
+                <Button
+                  label={exitLabel}
+                  variant="ghost"
+                  onPress={() => leave(router)}
+                />
+              ) : null}
               {step === 1 ? (
                 <NavRow
                   onBack={() => leave(router)}
+                  backLabel={exitLabel}
                   onForward={() => setStep(2)}
                   forwardLabel="Style"
                   forwardDisabled={!canContinuePins}
@@ -154,7 +261,13 @@ export default function NewRouteScreen() {
                   onForward={() => {
                     void save();
                   }}
-                  forwardLabel={saving ? 'Saving…' : 'Save route'}
+                  forwardLabel={
+                    saving
+                      ? 'Saving…'
+                      : editingId
+                        ? 'Save changes'
+                        : 'Save route'
+                  }
                   forwardDisabled={!candidate || saving}
                 />
               ) : null}
