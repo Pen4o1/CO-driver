@@ -12,6 +12,7 @@ import {
 import { canMutateLibrary } from '@/core/safety';
 import { formatDistanceKm } from '@/core/units';
 import { DriveHistoryCard } from '@/features/library/DriveHistoryCard';
+import { RouteEditModal } from '@/features/library/RouteEditModal';
 import { RouteLibraryCard } from '@/features/library/RouteLibraryCard';
 import { deleteRoutePack } from '@/features/maps/offlinePacks';
 import {
@@ -63,6 +64,7 @@ export default function HomeScreen() {
   const [page, setPage] = useState(PAGE);
   const [picking, setPicking] = useState<LibraryList | null>(null);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     listRoutes()
@@ -232,115 +234,42 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Apex</Text>
-      <Text style={styles.body}>
-        Build a road, or upload a GPX track, then drive with pace notes.
-      </Text>
-      <Button label="New route" onPress={() => router.push('/route/new')} />
-      <Button
-        label={importing ? 'Opening…' : 'Upload GPX'}
-        variant="secondary"
-        disabled={importing}
-        onPress={() => {
-          setImporting(true);
-          setImportError(null);
-          void importGpxTrack()
-            .then((id) => {
-              if (id) router.push(`/route/${id}`);
-            })
-            .catch((caught: unknown) => {
-              setImportError(
-                caught instanceof Error ? caught.message : 'Upload failed',
-              );
-            })
-            .finally(() => setImporting(false));
-        }}
-      />
-      {importError ? <Text style={styles.error}>{importError}</Text> : null}
-      <View style={styles.sectionHead}>
-        <Text style={styles.heading}>Library · {routes.length}</Text>
-        {selectButton('routes')}
-      </View>
-      {pickBar('routes', false)}
-      {routes.length === 0 ? (
-        <Text style={styles.body}>No saved routes yet.</Text>
-      ) : (
-        routePreview.map((route) => (
-          <RouteLibraryCard
-            key={route.id}
-            route={route}
-            units={units}
-            selecting={picking === 'routes'}
-            selected={selected.has(route.id)}
-            onToggle={() =>
-              setSelected((current) => toggleIds(current, [route.id]))
-            }
-            onOpen={() => router.push(`/route/${route.id}`)}
-            onEdit={() => router.push(`/route/${route.id}/edit`)}
-            onFavourite={() => {
-              void setRouteFavourite(route.id, !route.favourite).then(reload);
-            }}
-          />
-        ))
-      )}
-      {routes.length > PREVIEW ? (
-        <Pressable
-          accessibilityLabel={`Browse all ${routes.length} routes`}
-          accessibilityRole="button"
-          onPress={() => openBrowser('routes')}
-          style={styles.browse}
-        >
-          <Text style={styles.browseText}>Browse all {routes.length}</Text>
-        </Pressable>
-      ) : null}
-      <View style={styles.sectionHead}>
-        <Text style={styles.heading}>History · {drives.length}</Text>
-        {selectButton('drives')}
-      </View>
-      {pickBar('drives', false)}
-      {drives.length === 0 ? (
-        <Text style={styles.body}>No drives recorded yet.</Text>
-      ) : (
-        drivePreview.map((drive) => (
-          <DriveHistoryCard
-            key={drive.id}
-            drive={drive}
-            units={units}
-            selecting={picking === 'drives'}
-            selected={selected.has(drive.id)}
-            onToggle={() =>
-              setSelected((current) => toggleIds(current, [drive.id]))
-            }
-            onOpen={() =>
-              router.push(`/drive/${drive.routeId}/summary?driveId=${drive.id}`)
-            }
-          />
-        ))
-      )}
-      {drives.length > PREVIEW ? (
-        <Pressable
-          accessibilityLabel={`Browse all ${drives.length} drives`}
-          accessibilityRole="button"
-          onPress={() => openBrowser('drives')}
-          style={styles.browse}
-        >
-          <Text style={styles.browseText}>Browse all {drives.length}</Text>
-        </Pressable>
-      ) : null}
-      <ListMenu
-        visible={browser === 'routes'}
-        title={`Routes · ${routes.length}`}
-        query={query}
-        onQueryChange={onQuery}
-        searchPlaceholder="Search routes"
-        onClose={() => setBrowser(null)}
-        toolbar={listToolbar('routes')}
-      >
-        {filteredRoutes.length === 0 ? (
-          <Text style={styles.body}>No routes match.</Text>
+    <>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Apex</Text>
+        <Text style={styles.body}>
+          Build a road, or upload a GPX track, then drive with pace notes.
+        </Text>
+        <Button label="New route" onPress={() => router.push('/route/new')} />
+        <Button
+          label={importing ? 'Opening…' : 'Upload GPX'}
+          variant="secondary"
+          disabled={importing}
+          onPress={() => {
+            setImporting(true);
+            setImportError(null);
+            void importGpxTrack()
+              .then((id) => {
+                if (id) router.push(`/route/${id}`);
+              })
+              .catch((caught: unknown) => {
+                setImportError(
+                  caught instanceof Error ? caught.message : 'Upload failed',
+                );
+              })
+              .finally(() => setImporting(false));
+          }}
+        />
+        {importError ? <Text style={styles.error}>{importError}</Text> : null}
+        <View style={styles.sectionHead}>
+          <Text style={styles.heading}>Library · {routes.length}</Text>
+          {selectButton('routes')}
+        </View>
+        {pickBar('routes', false)}
+        {routes.length === 0 ? (
+          <Text style={styles.body}>No saved routes yet.</Text>
         ) : (
-          filteredRoutes.slice(0, page).map((route) => (
+          routePreview.map((route) => (
             <RouteLibraryCard
               key={route.id}
               route={route}
@@ -350,46 +279,33 @@ export default function HomeScreen() {
               onToggle={() =>
                 setSelected((current) => toggleIds(current, [route.id]))
               }
-              onOpen={() => {
-                setBrowser(null);
-                router.push(`/route/${route.id}`);
-              }}
-              onEdit={() => {
-                setBrowser(null);
-                router.push(`/route/${route.id}/edit`);
-              }}
+              onOpen={() => router.push(`/route/${route.id}`)}
+              onEdit={() => setEditingId(route.id)}
               onFavourite={() => {
                 void setRouteFavourite(route.id, !route.favourite).then(reload);
               }}
             />
           ))
         )}
-        {filteredRoutes.length > page ? (
+        {routes.length > PREVIEW ? (
           <Pressable
-            accessibilityLabel="Show more routes"
+            accessibilityLabel={`Browse all ${routes.length} routes`}
             accessibilityRole="button"
-            onPress={() => setPage((count) => count + PAGE)}
+            onPress={() => openBrowser('routes')}
             style={styles.browse}
           >
-            <Text style={styles.browseText}>
-              Show more · {filteredRoutes.length - page} left
-            </Text>
+            <Text style={styles.browseText}>Browse all {routes.length}</Text>
           </Pressable>
         ) : null}
-      </ListMenu>
-      <ListMenu
-        visible={browser === 'drives'}
-        title={`History · ${drives.length}`}
-        query={query}
-        onQueryChange={onQuery}
-        searchPlaceholder="Search drives"
-        onClose={() => setBrowser(null)}
-        toolbar={listToolbar('drives')}
-      >
-        {filteredDrives.length === 0 ? (
-          <Text style={styles.body}>No drives match.</Text>
+        <View style={styles.sectionHead}>
+          <Text style={styles.heading}>History · {drives.length}</Text>
+          {selectButton('drives')}
+        </View>
+        {pickBar('drives', false)}
+        {drives.length === 0 ? (
+          <Text style={styles.body}>No drives recorded yet.</Text>
         ) : (
-          filteredDrives.slice(0, page).map((drive) => (
+          drivePreview.map((drive) => (
             <DriveHistoryCard
               key={drive.id}
               drive={drive}
@@ -399,39 +315,142 @@ export default function HomeScreen() {
               onToggle={() =>
                 setSelected((current) => toggleIds(current, [drive.id]))
               }
-              onOpen={() => {
-                setBrowser(null);
+              onOpen={() =>
                 router.push(
                   `/drive/${drive.routeId}/summary?driveId=${drive.id}`,
-                );
-              }}
+                )
+              }
             />
           ))
         )}
-        {filteredDrives.length > page ? (
+        {drives.length > PREVIEW ? (
           <Pressable
-            accessibilityLabel="Show more drives"
+            accessibilityLabel={`Browse all ${drives.length} drives`}
             accessibilityRole="button"
-            onPress={() => setPage((count) => count + PAGE)}
+            onPress={() => openBrowser('drives')}
             style={styles.browse}
           >
-            <Text style={styles.browseText}>
-              Show more · {filteredDrives.length - page} left
-            </Text>
+            <Text style={styles.browseText}>Browse all {drives.length}</Text>
           </Pressable>
         ) : null}
-      </ListMenu>
-      <View>
-        <Text style={styles.meta}>
-          {routes.length} routes ·{' '}
-          {formatDistanceKm(
-            drives.reduce((sum, d) => sum + d.distanceM, 0),
-            units,
-          )}{' '}
-          driven
-        </Text>
-      </View>
-    </ScrollView>
+        <ListMenu
+          visible={browser === 'routes'}
+          title={`Routes · ${routes.length}`}
+          query={query}
+          onQueryChange={onQuery}
+          searchPlaceholder="Search routes"
+          onClose={() => setBrowser(null)}
+          toolbar={listToolbar('routes')}
+        >
+          {filteredRoutes.length === 0 ? (
+            <Text style={styles.body}>No routes match.</Text>
+          ) : (
+            filteredRoutes.slice(0, page).map((route) => (
+              <RouteLibraryCard
+                key={route.id}
+                route={route}
+                units={units}
+                selecting={picking === 'routes'}
+                selected={selected.has(route.id)}
+                onToggle={() =>
+                  setSelected((current) => toggleIds(current, [route.id]))
+                }
+                onOpen={() => {
+                  setBrowser(null);
+                  router.push(`/route/${route.id}`);
+                }}
+                onEdit={() => {
+                  setBrowser(null);
+                  setEditingId(route.id);
+                }}
+                onFavourite={() => {
+                  void setRouteFavourite(route.id, !route.favourite).then(
+                    reload,
+                  );
+                }}
+              />
+            ))
+          )}
+          {filteredRoutes.length > page ? (
+            <Pressable
+              accessibilityLabel="Show more routes"
+              accessibilityRole="button"
+              onPress={() => setPage((count) => count + PAGE)}
+              style={styles.browse}
+            >
+              <Text style={styles.browseText}>
+                Show more · {filteredRoutes.length - page} left
+              </Text>
+            </Pressable>
+          ) : null}
+        </ListMenu>
+        <ListMenu
+          visible={browser === 'drives'}
+          title={`History · ${drives.length}`}
+          query={query}
+          onQueryChange={onQuery}
+          searchPlaceholder="Search drives"
+          onClose={() => setBrowser(null)}
+          toolbar={listToolbar('drives')}
+        >
+          {filteredDrives.length === 0 ? (
+            <Text style={styles.body}>No drives match.</Text>
+          ) : (
+            filteredDrives.slice(0, page).map((drive) => (
+              <DriveHistoryCard
+                key={drive.id}
+                drive={drive}
+                units={units}
+                selecting={picking === 'drives'}
+                selected={selected.has(drive.id)}
+                onToggle={() =>
+                  setSelected((current) => toggleIds(current, [drive.id]))
+                }
+                onOpen={() => {
+                  setBrowser(null);
+                  router.push(
+                    `/drive/${drive.routeId}/summary?driveId=${drive.id}`,
+                  );
+                }}
+              />
+            ))
+          )}
+          {filteredDrives.length > page ? (
+            <Pressable
+              accessibilityLabel="Show more drives"
+              accessibilityRole="button"
+              onPress={() => setPage((count) => count + PAGE)}
+              style={styles.browse}
+            >
+              <Text style={styles.browseText}>
+                Show more · {filteredDrives.length - page} left
+              </Text>
+            </Pressable>
+          ) : null}
+        </ListMenu>
+        <View>
+          <Text style={styles.meta}>
+            {routes.length} routes ·{' '}
+            {formatDistanceKm(
+              drives.reduce((sum, d) => sum + d.distanceM, 0),
+              units,
+            )}{' '}
+            driven
+          </Text>
+        </View>
+      </ScrollView>
+      <RouteEditModal
+        routeId={editingId}
+        onClose={() => {
+          setEditingId(null);
+          reload();
+        }}
+        onDeleted={() => {
+          setEditingId(null);
+          reload();
+        }}
+      />
+    </>
   );
 }
 

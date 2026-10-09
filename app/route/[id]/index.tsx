@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { RouteCandidate } from '@/core/types';
 import { formatDistanceKm, formatDuration } from '@/core/units';
+import { RouteEditModal } from '@/features/library/RouteEditModal';
 import { OfflinePackCard } from '@/features/maps/OfflinePackCard';
 import { RouteMap } from '@/features/maps/RouteMap';
 import { getRoute } from '@/features/storage';
@@ -22,6 +23,7 @@ export default function RouteDetailsScreen() {
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dockHeight, setDockHeight] = useState(0);
+  const [editing, setEditing] = useState(false);
 
   const reload = useCallback(() => {
     if (!id || typeof id !== 'string') return;
@@ -120,7 +122,7 @@ export default function RouteDetailsScreen() {
               label="Edit"
               variant="secondary"
               accessibilityLabel="Edit route"
-              onPress={() => router.push(`/route/${routeId}/edit`)}
+              onPress={() => setEditing(true)}
               style={styles.action}
             />
             <Button
@@ -137,6 +139,14 @@ export default function RouteDetailsScreen() {
           />
         </View>
       ) : null}
+      <RouteEditModal
+        routeId={editing ? routeId : null}
+        onClose={() => {
+          setEditing(false);
+          reload();
+        }}
+        onDeleted={() => router.replace('/')}
+      />
     </View>
   );
 }
