@@ -19,11 +19,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     initMapLibre();
-    void configureCoDriverAudio({ duck: true, background: true });
     let unsub: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
       await hydrateSettings();
+      if (cancelled) return;
+      await configureCoDriverAudio({ background: true });
       if (cancelled) return;
       unsub = watchSettingsPersist();
       const accepted = await disclaimerAccepted();

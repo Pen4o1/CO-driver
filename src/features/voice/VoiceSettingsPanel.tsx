@@ -4,12 +4,15 @@ import * as Speech from 'expo-speech';
 
 import { SAMPLE_PHRASE } from '@/core/voice';
 import {
-  configureCoDriverAudio,
   createTtsProvider,
   voiceQualityLabel,
   type TtsProviderId,
   type Voice,
 } from '@/features/voice';
+import {
+  holdOtherAudio,
+  releaseOtherAudio,
+} from '@/features/voice/otherAudioHold';
 import { useSettings } from '@/state/settings';
 import { ListMenu } from '@/ui/ListMenu';
 import { Segmented } from '@/ui/Segmented';
@@ -55,7 +58,6 @@ function compareLanguages(a: string, b: string): number {
 export function VoiceSettingsPanel() {
   const ttsProviderId = useSettings((s) => s.ttsProviderId);
   const voiceId = useSettings((s) => s.voiceId);
-  const duckOthers = useSettings((s) => s.duckOthers);
   const voiceVolume = useSettings((s) => s.voiceVolume);
   const patch = useSettings((s) => s.patch);
 
@@ -277,26 +279,6 @@ export function VoiceSettingsPanel() {
         }}
       />
       <SettingGroup
-        title="Other audio"
-        footer="Duck lowers other audio while a call plays. Pause stops it."
-        inset="tight"
-      >
-        <Segmented
-          bare
-          accessibilityLabel="Other audio"
-          value={duckOthers ? 'duck' : 'pause'}
-          options={[
-            { id: 'duck', label: 'Duck' },
-            { id: 'pause', label: 'Pause' },
-          ]}
-          onChange={(id) => {
-            const duck = id === 'duck';
-            patch({ duckOthers: duck });
-            void configureCoDriverAudio({ duck, background: true });
-          }}
-        />
-      </SettingGroup>
-      <SettingGroup
         title={`Volume · ${Math.round(voiceVolume * 10)}`}
         inset="regular"
       >
@@ -316,11 +298,22 @@ export function VoiceSettingsPanel() {
           label="Play test phrase"
           onPress={() => {
             void Speech.stop();
+            void holdOtherAudio();
             Speech.speak(SAMPLE_PHRASE, {
               voice: voiceId,
               volume: voiceVolume,
-              onError: () => setStatus('Could not play the sample.'),
-              onDone: () => setStatus(null),
+              onError: () => {
+                setStatus('Could not play the sample.');
+                releaseOtherAudio();
+              },
+              onDone: () => {
+                setStatus(null);
+                releaseOtherAudio();
+              },
+              onStopped: () => {
+                setStatus(null);
+                releaseOtherAudio();
+              },
             });
             setStatus('Playing…');
           }}

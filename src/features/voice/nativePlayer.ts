@@ -1,6 +1,7 @@
 import { createAudioPlayer } from 'expo-audio';
 
 import type { ClipPlayer } from './clipPool';
+import { holdOtherAudio } from './otherAudioHold';
 
 export function createNativeClipPlayer(): ClipPlayer {
   const player = createAudioPlayer(null, { keepAudioSessionActive: true });
@@ -9,7 +10,7 @@ export function createNativeClipPlayer(): ClipPlayer {
       player.replace({ uri });
     },
     play() {
-      player.play();
+      void holdOtherAudio().then(() => player.play());
     },
     pause() {
       player.pause();

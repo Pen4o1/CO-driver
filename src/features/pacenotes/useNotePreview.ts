@@ -4,6 +4,10 @@ import * as Speech from 'expo-speech';
 import { speakLikeCoDriver, LIVE_CLIP_URI } from '@/core/voice';
 import type { PaceNote } from '@/core/types';
 import { createNativeClipPlayer } from '@/features/voice/nativePlayer';
+import {
+  holdOtherAudio,
+  releaseOtherAudio,
+} from '@/features/voice/otherAudioHold';
 import type { ClipPlayer } from '@/features/voice/clipPool';
 import type { PreparedClip } from '@/features/voice/prepareRoute';
 import { useSettings } from '@/state/settings';
@@ -27,6 +31,7 @@ export function useNotePreview(clips: Map<string, PreparedClip>) {
     playerRef.current?.stop();
     playingRef.current = null;
     setPlayingId(null);
+    releaseOtherAudio();
   }, []);
 
   useEffect(() => {
@@ -46,6 +51,7 @@ export function useNotePreview(clips: Map<string, PreparedClip>) {
       unsubRef.current = player.onFinished(() => {
         playingRef.current = null;
         setPlayingId(null);
+        releaseOtherAudio();
       });
       playerRef.current = player;
       return player;
@@ -76,20 +82,21 @@ export function useNotePreview(clips: Map<string, PreparedClip>) {
       }
       playingRef.current = note.id;
       setPlayingId(note.id);
+      void holdOtherAudio();
       Speech.speak(text, {
         voice: voiceId || undefined,
         volume,
         onDone: () => {
-          if (playingRef.current === note.id) {
-            playingRef.current = null;
-            setPlayingId(null);
-          }
+          if (playingRef.current !== note.id) return;
+          playingRef.current = null;
+          setPlayingId(null);
+          releaseOtherAudio();
         },
         onStopped: () => {
-          if (playingRef.current === note.id) {
-            playingRef.current = null;
-            setPlayingId(null);
-          }
+          if (playingRef.current !== note.id) return;
+          playingRef.current = null;
+          setPlayingId(null);
+          releaseOtherAudio();
         },
       });
     },

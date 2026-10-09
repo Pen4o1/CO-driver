@@ -1,3 +1,7 @@
+jest.mock('expo-audio', () => ({
+  setIsAudioActiveAsync: jest.fn(async () => undefined),
+}));
+
 import { ClipPool, type ClipPlayer } from '../clipPool';
 import { CoDriverVoice } from '../CoDriverVoice';
 import type { DeviceSpeechApi } from '../DeviceTtsProvider';

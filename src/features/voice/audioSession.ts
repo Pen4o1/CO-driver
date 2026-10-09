@@ -1,24 +1,20 @@
-import { setAudioModeAsync, type InterruptionMode } from 'expo-audio';
+import { setAudioModeAsync } from 'expo-audio';
 
 export type AudioSessionOpts = {
-  duck: boolean;
   background: boolean;
 };
 
 /**
- * SDK 57 names (verified): playsInSilentMode, shouldPlayInBackground,
- * interruptionMode 'duckOthers' | 'doNotMix' | 'mixWithOthers'.
- * Maps the Phase 4 brief's expo-av field names onto expo-audio.
+ * Music ducks while a call is playing. The session is released when the
+ * call ends, so other audio comes back. SDK 57 names (verified):
+ * playsInSilentMode, shouldPlayInBackground, interruptionMode 'duckOthers'.
  */
 export async function configureCoDriverAudio(
   opts: AudioSessionOpts,
 ): Promise<void> {
-  const interruptionMode: InterruptionMode = opts.duck
-    ? 'duckOthers'
-    : 'doNotMix';
   await setAudioModeAsync({
     playsInSilentMode: true,
     shouldPlayInBackground: opts.background,
-    interruptionMode,
+    interruptionMode: 'duckOthers',
   });
 }

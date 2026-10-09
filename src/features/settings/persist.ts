@@ -13,7 +13,6 @@ function snapshot(): PersistedSettings {
     providerId: s.providerId,
     ttsProviderId: s.ttsProviderId,
     voiceId: s.voiceId,
-    duckOthers: s.duckOthers,
     voiceVolume: s.voiceVolume,
     spellOutDistances: s.spellOutDistances,
     leadPreset: s.leadPreset,

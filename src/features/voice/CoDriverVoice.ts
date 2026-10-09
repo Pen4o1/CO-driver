@@ -9,6 +9,7 @@ import type { VoiceAction } from '@/core/types';
 
 import type { ClipPool } from './clipPool';
 import type { DeviceSpeechApi } from './DeviceTtsProvider';
+import { holdOtherAudio, releaseOtherAudio } from './otherAudioHold';
 import type { PreparedClip } from './prepareRoute';
 
 export type CoDriverVoiceOpts = {
@@ -111,6 +112,7 @@ export class CoDriverVoice {
     this.generation += 1;
     this.opts.pool.stopAll();
     void this.opts.live.stop();
+    releaseOtherAudio();
   }
 
   private startCurrent(): void {
@@ -118,6 +120,7 @@ export class CoDriverVoice {
     if (!current || this.muted || this.interrupted) {
       return;
     }
+    void holdOtherAudio();
     const clip = this.clips.get(current.text);
     const live = !clip || clip.live || clip.uri === LIVE_CLIP_URI;
     const gen = this.generation;
@@ -126,7 +129,11 @@ export class CoDriverVoice {
         return;
       }
       this.queue = completePlaying(this.queue);
-      this.startCurrent();
+      if (this.queue.playing) {
+        this.startCurrent();
+        return;
+      }
+      releaseOtherAudio();
     };
     if (live) {
       this.opts.live.speak(current.text, {
