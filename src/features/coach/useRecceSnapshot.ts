@@ -4,19 +4,32 @@ import { Platform } from 'react-native';
 
 import { planRouteClips } from '@/core/voice';
 import { disclaimerAccepted } from '@/features/storage';
+import { findRoutePack } from '@/features/maps/offlinePacks';
 
 import { gpsBand } from './geoFix';
-import { filterFromSettings, loadDriveBundle } from './loadDriveBundle';
+import { loadDriveBundle } from './loadDriveBundle';
 import { lastKnownFix, watchRecceFix } from './location';
 import { countPreparedCalls, type RecceClipCounts } from './recceGate';
 
 const BATTERY_REFRESH_MS = 10_000;
+
+async function loadClipCounts(
+  routeId: string,
+): Promise<RecceClipCounts | 'missing'> {
+  const bundle = await loadDriveBundle(routeId);
+  if (!bundle) return 'missing';
+  const planned = planRouteClips(bundle.rawNotes, bundle.filter).uniqueTexts;
+  return countPreparedCalls(planned, new Set(bundle.clips.keys()));
+}
+
+export type MapPackState = 'ready' | 'missing' | 'unknown';
 
 export function useRecceSnapshot(routeId: string | undefined) {
   const [gps, setGps] = useState<ReturnType<typeof gpsBand>>('poor');
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
   const [battery, setBattery] = useState<number | null>(null);
   const [clips, setClips] = useState<RecceClipCounts | null>(null);
+  const [pack, setPack] = useState<MapPackState | null>(null);
   const [legal, setLegal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -45,19 +58,27 @@ export function useRecceSnapshot(routeId: string | undefined) {
         return;
       }
       try {
-        const filter = filterFromSettings();
-        const bundle = await loadDriveBundle(routeId, filter);
+        const counts = await loadClipCounts(routeId);
         if (cancelled) return;
-        if (!bundle) {
+        if (counts === 'missing') {
           setClips(null);
           setLoadError('Missing route');
           return;
         }
-        const planned = planRouteClips(bundle.rawNotes, filter).uniqueTexts;
-        setClips(countPreparedCalls(planned, new Set(bundle.clips.keys())));
+        setClips(counts);
         setLoadError(null);
       } catch {
         if (!cancelled) setLoadError('Could not read voice clips');
+      }
+    };
+
+    const readPack = async () => {
+      if (!routeId) return;
+      try {
+        const found = await findRoutePack(routeId);
+        if (!cancelled) setPack(found ? 'ready' : 'missing');
+      } catch {
+        if (!cancelled) setPack('unknown');
       }
     };
 
@@ -70,6 +91,7 @@ export function useRecceSnapshot(routeId: string | undefined) {
       });
     void readBattery();
     void readClips();
+    void readPack();
 
     const batterySub = Battery.addBatteryLevelListener(({ batteryLevel }) => {
       if (!cancelled && batteryLevel >= 0) {
@@ -108,14 +130,32 @@ export function useRecceSnapshot(routeId: string | undefined) {
     };
   }, [routeId]);
 
+  const reloadVoice = useCallback(async () => {
+    if (!routeId) return;
+    try {
+      const counts = await loadClipCounts(routeId);
+      if (counts === 'missing') {
+        setClips(null);
+        setLoadError('Missing route');
+        return;
+      }
+      setClips(counts);
+      setLoadError(null);
+    } catch {
+      setLoadError('Could not read voice clips');
+    }
+  }, [routeId]);
+
   return {
     gps,
     accuracyM,
     battery,
     clips,
+    pack,
     legal,
     setLegal,
     loadError,
     observe,
+    reloadVoice,
   };
 }

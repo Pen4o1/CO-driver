@@ -1,4 +1,5 @@
 export {
+  formatClimbM,
   formatDistanceKm,
   formatDrivenDistance,
   formatDuration,

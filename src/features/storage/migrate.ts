@@ -7,6 +7,10 @@ const ROUTE_COLUMNS: { name: string; sql: string }[] = [
   },
   { name: 'note', sql: 'ALTER TABLE routes ADD COLUMN note TEXT' },
   { name: 'photo_uri', sql: 'ALTER TABLE routes ADD COLUMN photo_uri TEXT' },
+  {
+    name: 'voice_card_json',
+    sql: 'ALTER TABLE routes ADD COLUMN voice_card_json TEXT',
+  },
 ];
 
 export async function migrateSchema(db: SQLiteDatabase): Promise<void> {

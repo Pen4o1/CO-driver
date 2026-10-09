@@ -2,6 +2,7 @@ export type UnitSystem = 'metric' | 'imperial';
 
 const METRES_PER_MILE = 1609.344;
 const METRES_PER_YARD = 0.9144;
+const METRES_PER_FOOT = 0.3048;
 
 export function metresToKm(distanceM: number): number {
   return distanceM / 1000;
@@ -51,6 +52,17 @@ export function formatDrivenDistance(
   const pct = routeCompletionPercent(distanceM, routeLengthM);
   if (pct == null) return distance;
   return `${distance} · ${pct}%`;
+}
+
+export function formatClimbM(
+  heightM: number | null,
+  units: UnitSystem,
+): string | null {
+  if (heightM == null || !Number.isFinite(heightM)) return null;
+  if (units === 'imperial') {
+    return `${Math.round(heightM / METRES_PER_FOOT)} ft`;
+  }
+  return `${Math.round(heightM)} m`;
 }
 
 export function formatLengthM(distanceM: number, units: UnitSystem): string {

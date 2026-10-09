@@ -1,7 +1,13 @@
+import { parseRouteVoiceCard, type RouteVoiceCard } from '@/core/settings';
+import type { RouteCandidate, RouteStyle } from '@/core/types';
+
 import { hashKey } from './kvCache';
+import {
+  candidateFromJson,
+  candidateToJson,
+  geometryToJson,
+} from './routeJson';
 import { getDb } from './sqliteCache';
-import type { RouteCandidate, RouteGeometry, RouteStyle } from '@/core/types';
-import { buildRouteGeometry } from '@/core/geo';
 
 export type SavedRouteRow = {
   id: string;
@@ -12,6 +18,7 @@ export type SavedRouteRow = {
   favourite: boolean;
   note: string | null;
   photoUri: string | null;
+  voiceCard: RouteVoiceCard | null;
 };
 
 export type RouteSummary = {
@@ -26,49 +33,12 @@ export type RouteSummary = {
   lastDrivenAt: number | null;
 };
 
-type GeometryJson = {
-  coords: RouteGeometry['coords'];
-  cumulative: number[];
-  lengthM: number;
-  bbox: RouteGeometry['bbox'];
-  elevationM: number[] | null;
-};
-
-function geometryToJson(geometry: RouteGeometry): GeometryJson {
-  return {
-    coords: geometry.coords,
-    cumulative: Array.from(geometry.cumulative),
-    lengthM: geometry.lengthM,
-    bbox: geometry.bbox,
-    elevationM: geometry.elevationM ? Array.from(geometry.elevationM) : null,
-  };
-}
-
-function geometryFromJson(raw: GeometryJson): RouteGeometry {
-  const elevationM =
-    raw.elevationM === null ? null : Float64Array.from(raw.elevationM);
-  return buildRouteGeometry(raw.coords, elevationM);
-}
-
-function candidateToJson(candidate: RouteCandidate): string {
-  return JSON.stringify({
-    ...candidate,
-    geometry: geometryToJson(candidate.geometry),
-  });
-}
-
-function candidateFromJson(text: string): RouteCandidate {
-  const raw = JSON.parse(text) as Omit<RouteCandidate, 'geometry'> & {
-    geometry: GeometryJson;
-  };
-  return { ...raw, geometry: geometryFromJson(raw.geometry) };
-}
-
 export async function saveRoute(input: {
   name: string;
   candidate: RouteCandidate;
   now?: () => number;
   note?: string | null;
+  voiceCard?: RouteVoiceCard | null;
 }): Promise<string> {
   const now = input.now ?? Date.now;
   const createdAt = now();
@@ -78,8 +48,8 @@ export async function saveRoute(input: {
     `INSERT INTO routes (
       id, name, created_at, profile_id, geometry_json, steps_json,
       breakdown_json, candidate_json, length_m, duration_s, bbox,
-      favourite, note, photo_uri
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NULL)`,
+      favourite, note, photo_uri, voice_card_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NULL, ?)`,
     [
       id,
       input.name,
@@ -93,6 +63,7 @@ export async function saveRoute(input: {
       input.candidate.breakdown.durationS,
       JSON.stringify(input.candidate.geometry.bbox),
       input.note ?? null,
+      input.voiceCard ? JSON.stringify(input.voiceCard) : null,
     ],
   );
   return id;
@@ -142,6 +113,7 @@ function mapRow(row: {
   favourite: number;
   note: string | null;
   photo_uri: string | null;
+  voice_card_json: string | null;
 }): SavedRouteRow {
   return {
     id: row.id,
@@ -152,7 +124,17 @@ function mapRow(row: {
     favourite: row.favourite === 1,
     note: row.note,
     photoUri: row.photo_uri,
+    voiceCard: parseVoiceCard(row.voice_card_json),
   };
+}
+
+function parseVoiceCard(raw: string | null): RouteVoiceCard | null {
+  if (!raw) return null;
+  try {
+    return parseRouteVoiceCard(JSON.parse(raw) as unknown);
+  } catch {
+    return null;
+  }
 }
 
 export async function getRoute(id: string): Promise<SavedRouteRow | null> {
@@ -166,9 +148,11 @@ export async function getRoute(id: string): Promise<SavedRouteRow | null> {
     favourite: number;
     note: string | null;
     photo_uri: string | null;
+    voice_card_json: string | null;
   }>(
     `SELECT id, name, created_at, profile_id, candidate_json,
-            favourite, note, photo_uri FROM routes WHERE id = ?`,
+            favourite, note, photo_uri, voice_card_json
+     FROM routes WHERE id = ?`,
     [id],
   );
   return row ? mapRow(row) : null;
@@ -240,18 +224,4 @@ export async function setRouteFavourite(
 export async function deleteRoute(id: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM routes WHERE id = ?', [id]);
-}
-
-export async function duplicateRoute(
-  id: string,
-  now?: () => number,
-): Promise<string | null> {
-  const row = await getRoute(id);
-  if (!row) return null;
-  return saveRoute({
-    name: `${row.name} copy`,
-    candidate: row.candidate,
-    now,
-    note: row.note,
-  });
 }

@@ -4,20 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SAFETY_DISCLAIMER_BG_EU } from '@/core/safety';
+import { RecceCheck, type RecceTone } from '@/features/coach/RecceCheck';
 import { canStartDrive } from '@/features/coach/recceGate';
 import { useRecceSnapshot } from '@/features/coach/useRecceSnapshot';
+import { RouteCallCardPanel } from '@/features/settings/RouteCallCardPanel';
 import { acceptDisclaimer } from '@/features/storage';
 import { Button } from '@/ui/Button';
 import { leave, NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
-
-type Tone = 'good' | 'ok' | 'poor';
-
-function toneColor(tone: Tone): string {
-  if (tone === 'good') return colors.grade5;
-  if (tone === 'ok') return colors.grade3;
-  return colors.danger;
-}
 
 export default function RecceScreen() {
   const router = useRouter();
@@ -29,10 +23,12 @@ export default function RecceScreen() {
     accuracyM,
     battery,
     clips,
+    pack,
     legal,
     setLegal,
     loadError,
     observe,
+    reloadVoice,
   } = useRecceSnapshot(routeId);
   const [error, setError] = useState<string | null>(null);
   useFocusEffect(observe);
@@ -55,7 +51,7 @@ export default function RecceScreen() {
     router.push(`/route/${routeId}/prepare`);
   };
 
-  const clipsTone: Tone =
+  const clipsTone: RecceTone =
     !clips || needed === 0
       ? 'ok'
       : clipsMissing
@@ -63,17 +59,39 @@ export default function RecceScreen() {
           ? 'poor'
           : 'ok'
         : 'good';
-  const batteryTone: Tone =
+  const batteryTone: RecceTone =
     battery === null ? 'ok' : battery < 20 ? 'poor' : 'good';
+  const packTone: RecceTone =
+    pack === 'ready' ? 'good' : pack === 'missing' ? 'poor' : 'ok';
+  const packValue =
+    pack === 'ready' ? 'Saved' : pack === 'missing' ? 'None' : '—';
+  const packDetail =
+    pack === 'ready'
+      ? 'On this phone'
+      : pack === 'missing'
+        ? 'Not saved. Open the route to download it.'
+        : pack === 'unknown'
+          ? 'Could not check'
+          : 'Checking the pack';
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.lead}>
           {clipsMissing
             ? 'Voice is not ready yet. Prepare it, or go back to the route.'
-            : 'Check the fix, the clips, and the battery. Start begins the drive.'}
+            : 'Check the fix, the clips, the map, and the battery. Start begins the drive.'}
         </Text>
-        <Check
+        {routeId ? (
+          <RouteCallCardPanel
+            key={routeId}
+            routeId={routeId}
+            onSaved={() => {
+              void reloadVoice();
+            }}
+          />
+        ) : null}
+        <RecceCheck
           label="GPS"
           value={gps === 'good' ? 'Good' : gps === 'ok' ? 'Fair' : 'Weak'}
           detail={
@@ -83,7 +101,7 @@ export default function RecceScreen() {
           }
           tone={gps}
         />
-        <Check
+        <RecceCheck
           label="Voice clips"
           value={clips ? `${ready} / ${needed}` : '…'}
           detail={
@@ -97,7 +115,18 @@ export default function RecceScreen() {
           }
           tone={clipsTone}
         />
-        <Check
+        <RecceCheck
+          label="Map pack"
+          value={packValue}
+          detail={packDetail}
+          tone={packTone}
+          onPress={
+            pack === 'missing' && routeId
+              ? () => router.navigate(`/route/${routeId}`)
+              : undefined
+          }
+        />
+        <RecceCheck
           label="Battery"
           value={battery === null ? '—' : `${battery}%`}
           detail={
@@ -120,7 +149,7 @@ export default function RecceScreen() {
             <Text style={styles.ack}>Tap to acknowledge</Text>
           </Pressable>
         ) : (
-          <Check
+          <RecceCheck
             label="Safety"
             value="OK"
             detail="Acknowledged for this install"
@@ -151,33 +180,6 @@ export default function RecceScreen() {
   );
 }
 
-function Check({
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone: Tone;
-}) {
-  const color = toneColor(tone);
-  return (
-    <View
-      accessibilityLabel={`${label}. ${value}. ${detail}`}
-      style={styles.check}
-    >
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <View style={styles.checkCopy}>
-        <Text style={styles.checkLabel}>{label}</Text>
-        <Text style={styles.checkDetail}>{detail}</Text>
-      </View>
-      <Text style={[styles.checkValue, { color }]}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: {
@@ -187,23 +189,6 @@ const styles = StyleSheet.create({
   },
   lead: { color: colors.muted, fontSize: type.body, marginBottom: space.xs },
   hint: { color: colors.muted, fontSize: type.caption },
-  check: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    minHeight: 64,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-  },
-  dot: { width: 14, height: 14, borderRadius: 7 },
-  checkCopy: { flex: 1, gap: 2 },
-  checkLabel: { color: colors.text, fontWeight: '700', fontSize: type.body },
-  checkDetail: { color: colors.muted, fontSize: type.caption },
-  checkValue: { fontSize: type.hud, fontWeight: '800' },
   legal: {
     backgroundColor: colors.surface,
     borderRadius: 16,

@@ -420,6 +420,10 @@ grid_cache(cell_id PRIMARY KEY, snapped_json, created_at)   -- road snapping, av
 
 `filter_json` on notes means changing the filter never requires a network re-route — only a re-derive (instant) and possibly a re-render of the clips.
 
+`routes.voice_card_json` stores two call cards, `bike` and `car`, plus which one is active. Each card is `leadPreset`, `minGradeToCall`, `verbosity`, and `confirmCalls`. Null means Settings still supplies those four fields. Junctions, crests, straights, care notes, finish, and chain distance stay global. Prepare, the checklist, the note sheet, and the drive use the active card. Changing it re-filters; it does not re-route.
+
+**Reverse.** One saved copy with the vertex order flipped, `elevationM` flipped with it, ascent and descent swapped, and router steps dropped. Pace notes are derived again from the line. No router.
+
 ---
 
 ## 10. Definition of done, globally

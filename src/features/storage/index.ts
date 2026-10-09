@@ -8,7 +8,6 @@ export {
 } from './sqliteCache';
 export {
   deleteRoute,
-  duplicateRoute,
   getRoute,
   listRoutes,
   renameRoute,
@@ -18,6 +17,11 @@ export {
   updateRoute,
 } from './routesRepo';
 export type { RouteSummary, SavedRouteRow } from './routesRepo';
+export {
+  duplicateRoute,
+  reverseRoute,
+  setRouteVoiceCard,
+} from './routeLibrary';
 export { getVoicePrepare, saveVoicePrepare } from './voicePrepareRepo';
 export type { VoicePrepareRow } from './voicePrepareRepo';
 export {

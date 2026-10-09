@@ -6,9 +6,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { routeCruiseSpeedMps } from '@/core/coach';
 import { SimOverlay } from '@/features/coach/SimOverlay';
 import {
-  filterFromSettings,
   loadDriveBundle,
-  timingFromSettings,
   type DriveBundle,
 } from '@/features/coach/loadDriveBundle';
 import { useSimDrive } from '@/features/coach/useSimDrive';
@@ -35,7 +33,7 @@ export default function SimDriveScreen() {
 
   useEffect(() => {
     if (!selectedId) return;
-    void loadDriveBundle(selectedId, filterFromSettings()).then(setBundle);
+    void loadDriveBundle(selectedId).then(setBundle);
   }, [selectedId]);
 
   if (!bundle) {
@@ -83,8 +81,8 @@ function SimSession({
   const sim = useSimDrive({
     geometry: bundle.candidate.geometry,
     notes: bundle.notes,
-    filter: filterFromSettings(),
-    timing: timingFromSettings(),
+    filter: bundle.filter,
+    timing: bundle.timing,
     clips: bundle.clips,
     speedMps,
   });

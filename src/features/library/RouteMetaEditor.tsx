@@ -13,6 +13,7 @@ type Props = {
   onRename: (name: string) => void;
   onNote: (note: string) => void;
   onDuplicate: () => void;
+  onReverse: () => void;
   onChangeRoad: () => void;
   onDelete: () => void;
 };
@@ -23,6 +24,7 @@ export function RouteMetaEditor({
   onRename,
   onNote,
   onDuplicate,
+  onReverse,
   onChangeRoad,
   onDelete,
 }: Props) {
@@ -71,6 +73,13 @@ export function RouteMetaEditor({
         variant="secondary"
         disabled={locked}
         onPress={onDuplicate}
+      />
+      <Button
+        label="Reverse"
+        variant="secondary"
+        disabled={locked}
+        accessibilityLabel="Reverse the road"
+        onPress={onReverse}
       />
       <Button
         label="Delete route"

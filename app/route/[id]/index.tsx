@@ -1,16 +1,21 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { RouteCandidate } from '@/core/types';
-import { formatDistanceKm, formatDuration } from '@/core/units';
+import { derivePaceNotes } from '@/core/pacenotes';
+import {
+  callCardSummary,
+  voiceForRoute,
+  type RouteVoiceCard,
+} from '@/core/settings';
+import type { PaceNote, RouteCandidate } from '@/core/types';
 import { RouteEditModal } from '@/features/library/RouteEditModal';
-import { OfflinePackCard } from '@/features/maps/OfflinePackCard';
+import { RoutePreviewDock } from '@/features/library/RoutePreviewDock';
 import { RouteMap } from '@/features/maps/RouteMap';
-import { getRoute } from '@/features/storage';
+import { getRoute, getVoicePrepare } from '@/features/storage';
+import { clipLookup, type PreparedClip } from '@/features/voice/prepareRoute';
 import { useSettings } from '@/state/settings';
-import { Button } from '@/ui/Button';
 import { leave, NavRow } from '@/ui/navigation';
 import { colors, space, type } from '@/ui/theme';
 
@@ -18,9 +23,12 @@ export default function RouteDetailsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const units = useSettings((s) => s.unitSystem);
+  const settings = useSettings();
+  const units = settings.unitSystem;
   const [name, setName] = useState('Route');
   const [candidate, setCandidate] = useState<RouteCandidate | null>(null);
+  const [voiceCard, setVoiceCard] = useState<RouteVoiceCard | null>(null);
+  const [clips, setClips] = useState<Map<string, PreparedClip>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [dockHeight, setDockHeight] = useState(0);
   const [editing, setEditing] = useState(false);
@@ -28,8 +36,8 @@ export default function RouteDetailsScreen() {
   const reload = useCallback(() => {
     if (!id || typeof id !== 'string') return;
     let cancelled = false;
-    getRoute(id)
-      .then((row) => {
+    Promise.all([getRoute(id), getVoicePrepare(id)])
+      .then(([row, prepared]) => {
         if (cancelled) return;
         if (!row) {
           setError('Route not found');
@@ -39,6 +47,8 @@ export default function RouteDetailsScreen() {
         setError(null);
         setName(row.name);
         setCandidate(row.candidate);
+        setVoiceCard(row.voiceCard);
+        setClips(prepared ? clipLookup(prepared.clips) : new Map());
       })
       .catch((caught: unknown) => {
         if (!cancelled) {
@@ -53,26 +63,38 @@ export default function RouteDetailsScreen() {
   useFocusEffect(reload);
 
   const routeId = typeof id === 'string' ? id : '';
+  const voice = useMemo(
+    () => voiceForRoute(voiceCard, settings),
+    [voiceCard, settings],
+  );
+  const notes = useMemo<PaceNote[]>(() => {
+    if (!candidate) return [];
+    return derivePaceNotes(candidate.geometry, candidate.steps, voice.filter);
+  }, [candidate, voice]);
 
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.fallback}>
-        <Text style={styles.body}>
-          Map preview needs the native dev client.
-        </Text>
-        <NavRow
-          onBack={() => leave(router)}
-          onForward={() => router.push(`/route/${routeId}/recce`)}
-          forwardLabel="Checklist"
-          forwardDisabled={!routeId}
-        />
-      </View>
-    );
-  }
+  const dock = candidate ? (
+    <RoutePreviewDock
+      name={name}
+      candidate={candidate}
+      units={units}
+      notes={notes}
+      clips={clips}
+      callSummary={callCardSummary(voice.card)}
+      routeId={routeId}
+      overlay={Platform.OS !== 'web'}
+      paddingBottom={Math.max(insets.bottom, space.md)}
+      onEdit={() => setEditing(true)}
+      onPrepare={() => router.push(`/route/${routeId}/prepare`)}
+      onChecklist={() => router.push(`/route/${routeId}/recce`)}
+      onLayoutHeight={(next) =>
+        setDockHeight((prev) => (prev === next ? prev : next))
+      }
+    />
+  ) : null;
 
-  return (
-    <View style={styles.screen}>
-      {candidate ? (
+  const screen = (
+    <View style={Platform.OS === 'web' ? styles.webScreen : styles.screen}>
+      {candidate && Platform.OS !== 'web' ? (
         <RouteMap
           start={candidate.geometry.coords[0] ?? null}
           end={
@@ -84,6 +106,9 @@ export default function RouteDetailsScreen() {
           interactivePins={false}
           bottomInset={dockHeight > 0 ? dockHeight : undefined}
         />
+      ) : null}
+      {candidate ? (
+        dock
       ) : (
         <View style={styles.fallback}>
           <Text style={styles.title}>{name}</Text>
@@ -91,54 +116,6 @@ export default function RouteDetailsScreen() {
           <NavRow onBack={() => leave(router)} />
         </View>
       )}
-      {candidate ? (
-        <View
-          onLayout={(event) => {
-            const next = Math.round(event.nativeEvent.layout.height);
-            setDockHeight((prev) => (prev === next ? prev : next));
-          }}
-          style={[
-            styles.dock,
-            { paddingBottom: Math.max(insets.bottom, space.md) },
-          ]}
-        >
-          <View style={styles.head}>
-            <Text style={styles.title} numberOfLines={1}>
-              {name}
-            </Text>
-            <Text style={styles.body} numberOfLines={2}>
-              {formatDistanceKm(candidate.geometry.lengthM, units)}
-              {candidate.breakdown.durationS > 0
-                ? ` · est. ${formatDuration(candidate.breakdown.durationS)}`
-                : ''}
-              {candidate.providerId === 'gpx'
-                ? ' · Uploaded track'
-                : ` · score ${Math.round(candidate.breakdown.score)}`}
-            </Text>
-          </View>
-          <OfflinePackCard routeId={routeId} bbox={candidate.geometry.bbox} />
-          <View style={styles.actions}>
-            <Button
-              label="Edit"
-              variant="secondary"
-              accessibilityLabel="Edit route"
-              onPress={() => setEditing(true)}
-              style={styles.action}
-            />
-            <Button
-              label="Prepare voice"
-              variant="secondary"
-              onPress={() => router.push(`/route/${routeId}/prepare`)}
-              style={styles.action}
-            />
-          </View>
-          <Button
-            label="Checklist"
-            disabled={!routeId}
-            onPress={() => router.push(`/route/${routeId}/recce`)}
-          />
-        </View>
-      ) : null}
       <RouteEditModal
         routeId={editing ? routeId : null}
         onClose={() => {
@@ -149,27 +126,20 @@ export default function RouteDetailsScreen() {
       />
     </View>
   );
+
+  if (Platform.OS === 'web') {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={styles.web}>
+        {screen}
+      </ScrollView>
+    );
+  }
+  return screen;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  dock: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: space.md,
-    paddingTop: space.lg,
-    gap: space.md,
-  },
-  head: { gap: 2 },
-  actions: { flexDirection: 'row', gap: space.sm },
-  action: { flex: 1 },
+  webScreen: { backgroundColor: colors.bg, minHeight: '100%' },
   title: { color: colors.text, fontSize: 20, fontWeight: '700' },
   body: { color: colors.muted, fontSize: type.caption },
   fallback: {
@@ -180,4 +150,5 @@ const styles = StyleSheet.create({
     gap: space.md,
     backgroundColor: colors.bg,
   },
+  web: { flexGrow: 1 },
 });

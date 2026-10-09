@@ -1,5 +1,9 @@
 import { DEFAULT_TIMING, type TimingSettings } from '@/core/coach';
-import { filterFromPersisted } from '@/core/settings';
+import {
+  filterFromPersisted,
+  voiceForRoute,
+  type RouteVoiceCard,
+} from '@/core/settings';
 import { DEFAULT_NOTE_FILTER, derivePaceNotesDetailed } from '@/core/pacenotes';
 import type { NoteFilterOptions, PaceNote, RouteCandidate } from '@/core/types';
 import { getRoute, getVoicePrepare } from '@/features/storage';
@@ -14,6 +18,17 @@ export function timingFromSettings(): TimingSettings {
   return { ...DEFAULT_TIMING, preset: useSettings.getState().leadPreset };
 }
 
+export function voiceForSavedRoute(voiceCard: RouteVoiceCard | null): {
+  filter: NoteFilterOptions;
+  timing: TimingSettings;
+} {
+  const voice = voiceForRoute(voiceCard, useSettings.getState());
+  return {
+    filter: voice.filter,
+    timing: { ...DEFAULT_TIMING, preset: voice.leadPreset },
+  };
+}
+
 export type DriveBundle = {
   name: string;
   candidate: RouteCandidate;
@@ -21,14 +36,16 @@ export type DriveBundle = {
   rawNotes: PaceNote[];
   clips: Map<string, PreparedClip>;
   clipCount: number;
+  filter: NoteFilterOptions;
+  timing: TimingSettings;
 };
 
 export async function loadDriveBundle(
   routeId: string,
-  filter: NoteFilterOptions = filterFromSettings(),
 ): Promise<DriveBundle | null> {
   const row = await getRoute(routeId);
   if (!row) return null;
+  const { filter, timing } = voiceForSavedRoute(row.voiceCard);
   const derived = derivePaceNotesDetailed(
     row.candidate.geometry,
     row.candidate.steps,
@@ -42,6 +59,8 @@ export async function loadDriveBundle(
     rawNotes: derived.rawNotes,
     clips: prepared ? clipLookup(prepared.clips) : new Map(),
     clipCount: prepared?.clipCount ?? 0,
+    filter,
+    timing,
   };
 }
 

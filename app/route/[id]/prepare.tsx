@@ -9,7 +9,7 @@ import {
   planRouteClipVariants,
   planRouteClips,
 } from '@/core/voice';
-import { filterFromSettings } from '@/features/coach/loadDriveBundle';
+import { callCardSummary, voiceForRoute } from '@/core/settings';
 import {
   createTtsProvider,
   prepareRouteClips,
@@ -40,6 +40,7 @@ export default function PrepareScreen() {
       s.verbosity,
       s.chainRadius,
       s.confirmCalls,
+      s.leadPreset,
     ].join('|'),
   );
   const cancelled = useRef(false);
@@ -52,6 +53,7 @@ export default function PrepareScreen() {
   const [liveMode, setLiveMode] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
   const [estimate, setEstimate] = useState(0);
+  const [callSummary, setCallSummary] = useState('Settings');
 
   const provider = useMemo(
     () => createTtsProvider(ttsProviderId),
@@ -75,7 +77,9 @@ export default function PrepareScreen() {
           return;
         }
         setName(row.name);
-        const filter = filterFromSettings();
+        const voice = voiceForRoute(row.voiceCard, useSettings.getState());
+        const filter = voice.filter;
+        setCallSummary(callCardSummary(voice.card));
         const derived = derivePaceNotesDetailed(
           row.candidate.geometry,
           row.candidate.steps,
@@ -103,7 +107,8 @@ export default function PrepareScreen() {
     try {
       const row = await getRoute(id);
       if (!row) throw new Error('Route not found');
-      const filter = filterFromSettings();
+      const voice = voiceForRoute(row.voiceCard, useSettings.getState());
+      const filter = voice.filter;
       const derived = derivePaceNotesDetailed(
         row.candidate.geometry,
         row.candidate.steps,
@@ -149,9 +154,9 @@ export default function PrepareScreen() {
         <Text style={styles.title}>Prepare voice</Text>
         <Text style={styles.body}>{name}</Text>
         <Text style={styles.hint}>
-          {noteCount} calls on the checklist for your current settings. Prepare
-          also records Full, Standard, and Terse, at chain distances 0 / 60 /
-          200 m. Estimated {formatBytes(estimate)}.
+          {callSummary}. {noteCount} calls on the checklist for this card.
+          Prepare also records Full, Standard, and Terse, at chain distances 0 /
+          60 / 200 m. Estimated {formatBytes(estimate)}.
         </Text>
         <Text style={styles.hint}>{provider.description}</Text>
         {progress ? (

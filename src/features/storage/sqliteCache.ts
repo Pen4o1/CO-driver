@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS routes (
   bbox TEXT NOT NULL,
   favourite INTEGER NOT NULL DEFAULT 0,
   note TEXT,
-  photo_uri TEXT
+  photo_uri TEXT,
+  voice_card_json TEXT
 );
 CREATE TABLE IF NOT EXISTS voice_cache (
   text_hash TEXT PRIMARY KEY,

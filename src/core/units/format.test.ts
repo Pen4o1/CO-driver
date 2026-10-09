@@ -1,4 +1,5 @@
 import {
+  formatClimbM,
   formatDistanceKm,
   formatDrivenDistance,
   formatDuration,
@@ -22,6 +23,12 @@ describe('units', () => {
     );
     expect(formatDrivenDistance(11000, 10000, 'metric')).toBe('11.0 km · 100%');
     expect(formatDrivenDistance(18200, null, 'metric')).toBe('18.2 km');
+  });
+
+  it('formats climb in metres or feet', () => {
+    expect(formatClimbM(420, 'metric')).toBe('420 m');
+    expect(formatClimbM(420, 'imperial')).toBe('1378 ft');
+    expect(formatClimbM(null, 'metric')).toBeNull();
   });
 
   it('formats duration', () => {

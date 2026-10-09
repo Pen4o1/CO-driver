@@ -36,7 +36,7 @@ export default function DriveHudScreen() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    loadDriveBundle(id, filterFromSettings())
+    loadDriveBundle(id)
       .then((row) => {
         if (!cancelled) {
           if (!row) setBundleError('Route not found');
@@ -72,8 +72,8 @@ export default function DriveHudScreen() {
       elevationM: null,
     },
     notes: bundle?.notes ?? [],
-    filter: filterFromSettings(),
-    timing: timingFromSettings(),
+    filter: bundle?.filter ?? filterFromSettings(),
+    timing: bundle?.timing ?? timingFromSettings(),
     clips: bundle?.clips ?? new Map(),
     voiceId,
     volume,
