@@ -13,6 +13,11 @@ export const photonFeatureSchema = z.object({
       country: z.string().optional(),
       street: z.string().optional(),
       housenumber: z.string().optional(),
+      district: z.string().optional(),
+      locality: z.string().optional(),
+      county: z.string().optional(),
+      state: z.string().optional(),
+      postcode: z.string().optional(),
       osm_key: z.string().optional(),
       osm_value: z.string().optional(),
       type: z.string().optional(),
@@ -26,7 +31,11 @@ export const photonResponseSchema = z.object({
 });
 
 export type PhotonHit = {
+  /** Single line stored on the pin. */
   label: string;
+  title: string;
+  subtitle: string;
+  kind: string;
   lat: number;
   lng: number;
 };

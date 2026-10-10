@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AddressSearch } from '@/features/geocoding/AddressSearch';
+import {
+  noteSearchFix,
+  useSearchBias,
+} from '@/features/geocoding/useSearchBias';
 import { getCurrentLatLng } from '@/features/maps/currentLocation';
 import { useRouteDraft } from '@/state/routeDraft';
 import { Button } from '@/ui/Button';
@@ -32,6 +36,9 @@ export function PinsStep() {
   const setLoopDistanceKm = useRouteDraft((s) => s.setLoopDistanceKm);
   const setErrorMessage = useRouteDraft((s) => s.setErrorMessage);
   const [locating, setLocating] = useState(false);
+  const [biasRevision, setBiasRevision] = useState(0);
+  const located = useSearchBias(null, biasRevision);
+  const bias = mode === 'ab' && activePin === 'end' && start ? start : located;
 
   return (
     <View style={styles.panel}>
@@ -48,6 +55,7 @@ export function PinsStep() {
         />
       </View>
       <AddressSearch
+        bias={bias}
         placeholder={
           mode === 'loop'
             ? 'Search a start place'
@@ -116,6 +124,8 @@ export function PinsStep() {
             setErrorMessage(result.error.message);
             return;
           }
+          noteSearchFix(result.value);
+          setBiasRevision((value) => value + 1);
           setStart(result.value, 'Current location');
           setActivePin('end');
         }}
