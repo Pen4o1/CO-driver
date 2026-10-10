@@ -2,7 +2,9 @@ import {
   CHAIN_INTO_M,
   CHAIN_THEN_M,
   ENTRY_EXIT_FRACTION,
+  GENTLE_GAP_SAMPLES,
   GENTLE_MIN_ANGLE_DEG,
+  GENTLE_STEP_DEG,
   LONG_ARC_M,
   MIN_SPAN_M,
   NOTE_MIN_SEPARATION_M,
@@ -12,7 +14,7 @@ import {
   TIGHTENS_RATIO,
 } from './constants';
 import type { Centreline, DetectedCorner, StraightRun } from './types';
-import { signOf, spanMetrics, refineSpan } from './window';
+import { signOf, spanMetrics } from './window';
 
 function radiusOfPortion(
   line: Centreline,
@@ -82,6 +84,8 @@ function overlapsCorner(
 /**
  * Gentle kinks the 12°/40 m gate misses (grade 5–6 arcs).
  * A same-sign run with |net| ≥ 12° becomes a corner if it does not overlap.
+ * Wide sweepers turn less than 0.35° between 5 m samples, so they have to
+ * accumulate. A short quiet gap is still the same bend.
  */
 export function detectGentleCorners(
   line: Centreline,
@@ -93,11 +97,15 @@ export function detectGentleCorners(
   let zeros = 0;
 
   const flush = (endIndex: number) => {
-    if (runStart === null) return;
-    const refined = refineSpan(line, runStart, endIndex);
-    const metrics = spanMetrics(line, refined.entryIndex, refined.exitIndex);
-    const loM = line.cumulative[refined.entryIndex];
-    const hiM = line.cumulative[refined.exitIndex];
+    if (runStart === null || endIndex <= runStart) {
+      runStart = null;
+      runDir = 0;
+      zeros = 0;
+      return;
+    }
+    const metrics = spanMetrics(line, runStart, endIndex);
+    const loM = line.cumulative[runStart];
+    const hiM = line.cumulative[endIndex];
     if (
       Math.abs(metrics.totalAngleDeg) >= GENTLE_MIN_ANGLE_DEG &&
       metrics.arcLengthM >= MIN_SPAN_M &&
@@ -106,8 +114,8 @@ export function detectGentleCorners(
       !overlapsCorner(existing.concat(extra), loM, hiM)
     ) {
       extra.push({
-        entryIndex: refined.entryIndex,
-        exitIndex: refined.exitIndex,
+        entryIndex: runStart,
+        exitIndex: endIndex,
         apexIndex: metrics.apexIndex,
         totalAngleDeg: metrics.totalAngleDeg,
         radiusM: metrics.radiusM,
@@ -115,7 +123,7 @@ export function detectGentleCorners(
         entryDistance: loM,
         exitDistance: hiM,
         apexDistance: line.cumulative[metrics.apexIndex],
-        entryBearingDeg: line.bearingsDeg[refined.entryIndex] ?? 0,
+        entryBearingDeg: line.bearingsDeg[runStart] ?? 0,
         direction: metrics.totalAngleDeg < 0 ? 'left' : 'right',
         directionConsistency: metrics.consistency,
         chain: null,
@@ -132,9 +140,9 @@ export function detectGentleCorners(
 
   for (let i = 0; i < line.rawDThetaDeg.length - 1; i += 1) {
     const d = line.rawDThetaDeg[i];
-    if (Math.abs(d) <= 0.35) {
+    if (Math.abs(d) <= GENTLE_STEP_DEG) {
       zeros += 1;
-      if (runStart !== null && zeros > 3) {
+      if (runStart !== null && zeros > GENTLE_GAP_SAMPLES) {
         flush(i - zeros + 1);
       }
       continue;

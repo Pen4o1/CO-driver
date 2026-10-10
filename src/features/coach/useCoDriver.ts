@@ -31,8 +31,11 @@ import {
   OFFLINE_LOCAL_TEXT,
   OFFLINE_PACK_TEXT,
   REROUTE_KEPT_TEXT,
+  WEAK_LOCAL_TEXT,
+  WEAK_PACK_TEXT,
   isOfflineError,
-  probeOnline,
+  probeLink,
+  type LinkState,
 } from './connectivity';
 import { geoFixFromLocation } from './geoFix';
 import {
@@ -96,11 +99,19 @@ export function useCoDriver(input: UseCoDriverInput) {
   }, []);
 
   const announceOffline = useCallback(
-    async (routeId: string) => {
+    async (routeId: string, kind: Exclude<LinkState, 'online'>) => {
       if (offlineRef.current) return;
       offlineRef.current = true;
       const pack = await findRoutePack(routeId).catch(() => null);
-      announce(pack ? OFFLINE_PACK_TEXT : OFFLINE_LOCAL_TEXT);
+      const text =
+        kind === 'weak'
+          ? pack
+            ? WEAK_PACK_TEXT
+            : WEAK_LOCAL_TEXT
+          : pack
+            ? OFFLINE_PACK_TEXT
+            : OFFLINE_LOCAL_TEXT;
+      announce(text);
     },
     [announce],
   );
@@ -161,7 +172,7 @@ export function useCoDriver(input: UseCoDriverInput) {
         })
         .catch((caught: unknown) => {
           if (isOfflineError(caught)) {
-            void announceOffline(cfg.routeId);
+            void announceOffline(cfg.routeId, 'offline');
             return;
           }
           announce(REROUTE_KEPT_TEXT);
@@ -259,10 +270,10 @@ export function useCoDriver(input: UseCoDriverInput) {
     if (!running) return;
     let cancelled = false;
     const tick = () => {
-      void probeOnline().then((online) => {
+      void probeLink().then((link) => {
         if (cancelled) return;
-        if (!online) {
-          void announceOffline(inputRef.current.routeId);
+        if (link !== 'online') {
+          void announceOffline(inputRef.current.routeId, link);
           return;
         }
         if (offlineRef.current) {

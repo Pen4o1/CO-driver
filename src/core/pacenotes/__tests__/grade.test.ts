@@ -82,6 +82,29 @@ describe('grade table (SPEC §5)', () => {
     expect(Math.abs(corners[0].totalAngleDeg ?? 0)).toBeGreaterThanOrEqual(12);
   });
 
+  it('marks a wide sweeper the 40 m window cannot see as grade 6', () => {
+    const notes = derivePaceNotes(
+      makeArc({ radiusM: 900, sweepDeg: 25, leadM: 80 }),
+      [],
+      { ...DEFAULT_NOTE_FILTER, includeStraights: false },
+    );
+    const corners = notes.filter((n) => n.type === 'corner');
+    expect(corners.length).toBeGreaterThanOrEqual(1);
+    expect(corners[0]?.grade).toBe(6);
+    expect(Math.abs(corners[0]?.totalAngleDeg ?? 0)).toBeGreaterThanOrEqual(12);
+  });
+
+  it('marks a sweeper stored as long chords, like a routed road', () => {
+    const notes = derivePaceNotes(
+      makeArc({ radiusM: 600, sweepDeg: 28, leadM: 100, stepM: 40 }),
+      [],
+      { ...DEFAULT_NOTE_FILTER, includeStraights: false },
+    );
+    const corners = notes.filter((n) => n.type === 'corner');
+    expect(corners.length).toBeGreaterThanOrEqual(1);
+    expect(corners[0]?.grade).toBeGreaterThanOrEqual(5);
+  });
+
   it('ignores an 8° kink', () => {
     const notes = derivePaceNotes(
       makeArc({ radiusM: 500, sweepDeg: 8, leadM: 80 }),

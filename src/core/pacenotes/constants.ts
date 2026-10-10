@@ -37,4 +37,11 @@ export const SCRIPT_MAX_NOTES = 3;
 
 /** Same-direction bends the 40 m window misses. Matches OPEN_DEG. */
 export const GENTLE_MIN_ANGLE_DEG = 12;
+/**
+ * Per-sample heading change that still belongs to a grade 5–6 sweeper.
+ * A 0.35° gate hides bends wider than about 800 m radius.
+ */
+export const GENTLE_STEP_DEG = 0.08;
+/** Quiet 5 m samples that end a sweeper. 12 samples is 60 m of straight. */
+export const GENTLE_GAP_SAMPLES = 12;
 export const CURVATURE_EPS = 1e-7;
