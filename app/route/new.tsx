@@ -222,7 +222,7 @@ export default function NewRouteScreen() {
         ]}
       >
         <Sheet
-          maxHeight={height * (step === 1 ? 0.6 : step === 3 ? 0.5 : 0.44)}
+          maxHeight={height * (step === 1 ? 0.72 : step === 3 ? 0.5 : 0.44)}
           footer={
             <>
               {errorMessage ? (

@@ -39,6 +39,9 @@ type RouteDraftState = {
   revision: number;
   setStart: (point: LatLng, label?: string) => void;
   setEnd: (point: LatLng, label?: string) => void;
+  clearStart: () => void;
+  clearEnd: () => void;
+  swapPins: () => void;
   setActivePin: (pin: PinTarget) => void;
   setStep: (step: BuilderStep) => void;
   setMode: (mode: RouteMode) => void;
@@ -98,6 +101,17 @@ export const useRouteDraft = create<RouteDraftState>((set, get) => ({
   setStart: (start, startLabel) =>
     set({ start, startLabel: startLabel ?? null }),
   setEnd: (end, endLabel) => set({ end, endLabel: endLabel ?? null }),
+  clearStart: () => set({ start: null, startLabel: null }),
+  clearEnd: () => set({ end: null, endLabel: null }),
+  swapPins: () => {
+    const { start, end, startLabel, endLabel } = get();
+    set({
+      start: end,
+      end: start,
+      startLabel: endLabel,
+      endLabel: startLabel,
+    });
+  },
   setActivePin: (activePin) => set({ activePin }),
   setStep: (step) => set({ step }),
   setMode: (mode) => set({ mode }),

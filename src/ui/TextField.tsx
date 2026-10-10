@@ -1,16 +1,26 @@
+import { forwardRef } from 'react';
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 import { colors, space, type } from './theme';
 
-export function TextField(props: TextInputProps) {
+type Props = TextInputProps & {
+  /** Drop the chrome when the field sits inside another control. */
+  bare?: boolean;
+};
+
+export const TextField = forwardRef<TextInput, Props>(function TextField(
+  { bare, style, ...props },
+  ref,
+) {
   return (
     <TextInput
+      ref={ref}
       placeholderTextColor={colors.muted}
-      style={styles.input}
+      style={[styles.input, bare && styles.bare, style]}
       {...props}
     />
   );
-}
+});
 
 const styles = StyleSheet.create({
   input: {
@@ -22,5 +32,13 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  bare: {
+    minHeight: 32,
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    backgroundColor: 'transparent',
   },
 });

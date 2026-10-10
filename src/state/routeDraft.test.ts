@@ -59,6 +59,28 @@ describe('route draft', () => {
     expect(draftIsDirty(state)).toBe(true);
   });
 
+  it('swaps start and finish with their names', () => {
+    useRouteDraft.getState().setStart({ lat: 1, lng: 2 }, 'Alpha');
+    useRouteDraft.getState().setEnd({ lat: 3, lng: 4 }, 'Beta');
+    useRouteDraft.getState().swapPins();
+    const state = useRouteDraft.getState();
+    expect(state.start).toEqual({ lat: 3, lng: 4 });
+    expect(state.end).toEqual({ lat: 1, lng: 2 });
+    expect(state.startLabel).toBe('Beta');
+    expect(state.endLabel).toBe('Alpha');
+  });
+
+  it('clears one stop and leaves the other', () => {
+    useRouteDraft.getState().setStart({ lat: 1, lng: 2 }, 'Alpha');
+    useRouteDraft.getState().setEnd({ lat: 3, lng: 4 }, 'Beta');
+    useRouteDraft.getState().clearEnd();
+    const state = useRouteDraft.getState();
+    expect(state.end).toBeNull();
+    expect(state.endLabel).toBeNull();
+    expect(state.start).toEqual({ lat: 1, lng: 2 });
+    expect(state.startLabel).toBe('Alpha');
+  });
+
   it('loads a closed route as a loop', () => {
     useRouteDraft.getState().loadForEdit({
       id: 'rt_loop',
