@@ -22,10 +22,18 @@ import type {
 import { appendDriveFix, createDrive, finishDrive } from '@/features/storage';
 import { attachVoiceInterruptions } from '@/features/voice';
 import type { PreparedClip } from '@/features/voice/prepareRoute';
+import { findRoutePack } from '@/features/maps/offlinePacks';
 import { useSession } from '@/state/session';
 import { useSettings } from '@/state/settings';
 
 import { setLocationTaskListener } from './backgroundTask';
+import {
+  OFFLINE_LOCAL_TEXT,
+  OFFLINE_PACK_TEXT,
+  REROUTE_KEPT_TEXT,
+  isOfflineError,
+  probeOnline,
+} from './connectivity';
 import { geoFixFromLocation } from './geoFix';
 import {
   requestDrivePermissions,
@@ -33,8 +41,12 @@ import {
   stopBackgroundUpdates,
   watchForeground,
 } from './location';
-import { rerouteFromHere } from './reroute';
-import { applyEngineOutput, createDriveVoice } from './voiceBridge';
+import { rerouteFromHere, usableReroute } from './reroute';
+import {
+  applyEngineOutput,
+  createDriveVoice,
+  withoutRejectedCalls,
+} from './voiceBridge';
 
 const AWAKE_TAG = 'apex-drive';
 
@@ -57,12 +69,15 @@ export function useCoDriver(input: UseCoDriverInput) {
   const [muted, setMuted] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [driveId, setDriveId] = useState<string | null>(null);
   const driveIdRef = useRef<string | null>(null);
   const epochRef = useRef(0);
   const engineRef = useRef<EngineState | null>(null);
   const voiceRef = useRef<ReturnType<typeof createDriveVoice> | null>(null);
   const rerouting = useRef(false);
+  const rerouteAttempted = useRef(false);
+  const offlineRef = useRef(false);
   const inputRef = useRef(input);
   const unsubRef = useRef<(() => void) | null>(null);
 
@@ -70,44 +85,92 @@ export function useCoDriver(input: UseCoDriverInput) {
     inputRef.current = input;
   }, [input]);
 
+  const announce = useCallback((text: string) => {
+    setNotice(text);
+    voiceRef.current?.enqueue({
+      kind: 'speak',
+      noteId: 'offline',
+      text,
+      priority: 'urgent',
+    });
+  }, []);
+
+  const announceOffline = useCallback(
+    async (routeId: string) => {
+      if (offlineRef.current) return;
+      offlineRef.current = true;
+      const pack = await findRoutePack(routeId).catch(() => null);
+      announce(pack ? OFFLINE_PACK_TEXT : OFFLINE_LOCAL_TEXT);
+    },
+    [announce],
+  );
+
   const pushFix = useCallback(
     (fix: GeoFix) => {
       const engine = engineRef.current;
       const voice = voiceRef.current;
       if (!engine || !voice) return;
       const result = updateEngine(engine, fix, fix.timestampMs);
-      engineRef.current = result.state;
+      const rejected = applyEngineOutput(voice, result.output);
+      engineRef.current = withoutRejectedCalls(result.state, rejected);
       setOutput(result.output);
-      applyEngineOutput(voice, result.output);
       const id = driveIdRef.current;
       if (id) {
         void appendDriveFix(id, fix);
       }
-      if (result.output.status === 'off-route' && !rerouting.current) {
-        rerouting.current = true;
-        const cfg = inputRef.current;
-        void rerouteFromHere({
-          providerId: cfg.providerId,
-          here: { lat: fix.lat, lng: fix.lng },
-          destination: cfg.destination,
-          via: cfg.waypoints,
-          previous: result.state.geometry,
-          filter: cfg.filter,
-        })
-          .then((rerouted) => {
-            if (!engineRef.current || !rerouted.changed) return;
-            engineRef.current = replaceRoute(
-              engineRef.current,
-              rerouted.geometry,
-              rerouted.notes,
-            );
-          })
-          .finally(() => {
-            rerouting.current = false;
-          });
+      if (result.output.status === 'on-route') {
+        rerouteAttempted.current = false;
       }
+      if (
+        result.output.status !== 'off-route' ||
+        rerouting.current ||
+        rerouteAttempted.current
+      ) {
+        return;
+      }
+      rerouteAttempted.current = true;
+      if (offlineRef.current) {
+        announce(REROUTE_KEPT_TEXT);
+        return;
+      }
+      rerouting.current = true;
+      const cfg = inputRef.current;
+      void rerouteFromHere({
+        providerId: cfg.providerId,
+        here: { lat: fix.lat, lng: fix.lng },
+        destination: cfg.destination,
+        via: cfg.waypoints,
+        previous: result.state.geometry,
+        filter: cfg.filter,
+      })
+        .then((rerouted) => {
+          const current = engineRef.current;
+          if (!current || current.status !== 'off-route' || !rerouted.changed) {
+            return;
+          }
+          if (!usableReroute(rerouted.geometry)) return;
+          const replaced = replaceRoute(
+            current,
+            rerouted.geometry,
+            rerouted.notes,
+          );
+          const refreshed = updateEngine(replaced, fix, fix.timestampMs);
+          const dropped = applyEngineOutput(voice, refreshed.output);
+          engineRef.current = withoutRejectedCalls(refreshed.state, dropped);
+          setOutput(refreshed.output);
+        })
+        .catch((caught: unknown) => {
+          if (isOfflineError(caught)) {
+            void announceOffline(cfg.routeId);
+            return;
+          }
+          announce(REROUTE_KEPT_TEXT);
+        })
+        .finally(() => {
+          rerouting.current = false;
+        });
     },
-    [],
+    [announce, announceOffline],
   );
 
   const start = useCallback(async () => {
@@ -193,6 +256,30 @@ export function useCoDriver(input: UseCoDriverInput) {
   }, []);
 
   useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    const tick = () => {
+      void probeOnline().then((online) => {
+        if (cancelled) return;
+        if (!online) {
+          void announceOffline(inputRef.current.routeId);
+          return;
+        }
+        if (offlineRef.current) {
+          offlineRef.current = false;
+          setNotice(null);
+        }
+      });
+    };
+    tick();
+    const timer = setInterval(tick, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [running, announceOffline]);
+
+  useEffect(() => {
     if (!running || !output) return;
     if (output.status === 'off-route') {
       useSession.getState().setStatus('off-route');
@@ -214,5 +301,16 @@ export function useCoDriver(input: UseCoDriverInput) {
     };
   }, []);
 
-  return { output, muted, running, error, driveId, start, stop, mute, pushFix };
+  return {
+    output,
+    muted,
+    running,
+    error,
+    notice,
+    driveId,
+    start,
+    stop,
+    mute,
+    pushFix,
+  };
 }

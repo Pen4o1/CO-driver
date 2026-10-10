@@ -20,7 +20,31 @@ export function withFired(
   return { ...fired, [firedKey(record.noteId, record.kind)]: record };
 }
 
-/** Re-arm a note if the car reversed more than 50 m behind its apex. */
+/** Undo fired marks when the player dropped the utterance, so the call can retry. */
+export function releaseFired(
+  fired: Readonly<Record<string, FiredRecord>>,
+  rejected: readonly { noteId: string; kind: FiredKind }[],
+): Record<string, FiredRecord> {
+  if (rejected.length === 0) {
+    return { ...fired };
+  }
+  const drop = new Set(
+    rejected.map((item) => firedKey(item.noteId, item.kind)),
+  );
+  const next: Record<string, FiredRecord> = {};
+  for (const [key, record] of Object.entries(fired)) {
+    if (!drop.has(key)) {
+      next[key] = record;
+    }
+  }
+  return next;
+}
+
+/**
+ * Re-arm a note only after the car reverses more than 50 m behind where that
+ * call actually fired. Being still on the approach must not clear it — the
+ * lead point is often more than 50 m before the apex.
+ */
 export function rearmFired(
   fired: Readonly<Record<string, FiredRecord>>,
   notes: { id: string; atDistance: number }[],
@@ -28,7 +52,8 @@ export function rearmFired(
 ): Record<string, FiredRecord> {
   const drop = new Set<string>();
   for (const note of notes) {
-    if (distanceAlongM < note.atDistance - REARM_BEHIND_M) {
+    const primary = fired[firedKey(note.id, 'primary')];
+    if (primary && distanceAlongM < primary.atDistanceM - REARM_BEHIND_M) {
       drop.add(note.id);
     }
   }

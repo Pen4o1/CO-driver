@@ -2,6 +2,7 @@ import { priorityForNote } from '@/core/voice';
 import { spokenTerse } from '@/core/pacenotes';
 import type { NoteFilterOptions, PaceNote, VoiceAction } from '@/core/types';
 
+import { CALL_CATCHUP_M } from './constants';
 import { coalesceGroup, groupUtterance } from './coalesce';
 import { isFired } from './fired';
 import { confirmTriggerM, primaryTriggerM } from './timing';
@@ -13,6 +14,19 @@ function crossed(
   triggerM: number,
 ): boolean {
   return previousM < triggerM && currentM >= triggerM;
+}
+
+/** True when the trigger was crossed, or the player dropped it and we are still at the corner. */
+function dueNow(
+  previousM: number,
+  currentM: number,
+  triggerM: number,
+  lateM: number,
+): boolean {
+  if (crossed(previousM, currentM, triggerM)) {
+    return true;
+  }
+  return currentM >= triggerM && currentM <= lateM;
 }
 
 export type ScheduledCall = {
@@ -49,7 +63,10 @@ export function scheduleCalls(input: {
       continue;
     }
     const trigger = primaryTriggerM(note, input.speedMps, input.timing);
-    if (!crossed(input.previousDistanceM, input.distanceAlongM, trigger)) {
+    const lateM = note.exitDistance + CALL_CATCHUP_M;
+    if (
+      !dueNow(input.previousDistanceM, input.distanceAlongM, trigger, lateM)
+    ) {
       continue;
     }
     const group = coalesceGroup(notes, i, input.filter.chainRadius).filter(
@@ -74,6 +91,7 @@ export function scheduleCalls(input: {
         text,
         priority: priorityForNote(head),
         clipId: head.audioClipId,
+        coveredNoteIds: group.map((item) => item.id),
       },
       log: {
         noteId: head.id,
@@ -102,7 +120,10 @@ export function scheduleCalls(input: {
       continue;
     }
     const trigger = confirmTriggerM(note, input.timing);
-    if (!crossed(input.previousDistanceM, input.distanceAlongM, trigger)) {
+    const lateM = note.exitDistance + CALL_CATCHUP_M;
+    if (
+      !dueNow(input.previousDistanceM, input.distanceAlongM, trigger, lateM)
+    ) {
       continue;
     }
     const text = spokenTerse(note);
@@ -118,6 +139,7 @@ export function scheduleCalls(input: {
         noteId: `${note.id}:confirm`,
         text,
         priority: 'normal',
+        coveredNoteIds: [note.id],
       },
       log: {
         noteId: note.id,

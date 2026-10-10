@@ -180,6 +180,8 @@ export type VoiceAction =
       text: string;
       priority: 'urgent' | 'normal' | 'info';
       clipId?: string;
+      /** Every note spoken by this one utterance. A dropped call retries all of them. */
+      coveredNoteIds?: string[];
     }
   | { kind: 'stop' }
   | { kind: 'duck'; ms: number };

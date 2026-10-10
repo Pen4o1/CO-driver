@@ -1,7 +1,12 @@
-import { destinationPoint, pointAtDistance } from '@/core/geo';
+import {
+  buildRouteGeometry,
+  destinationPoint,
+  pointAtDistance,
+} from '@/core/geo';
 
 import { OFF_ROUTE_TEXT } from '../constants';
 import { engineFrom, pauseEngine, seekEngine, updateEngine } from '../engine';
+import { releaseFired } from '../fired';
 import { confirmTriggerM, primaryTriggerM } from '../timing';
 import { cornerNote, FILTER, fixAt, straightGeometry } from './helpers';
 
@@ -72,6 +77,31 @@ describe('co-driver engine', () => {
       4000,
     );
     expect(again.output.actions.some((a) => a.kind === 'speak')).toBe(true);
+  });
+
+  it('retries a call the player did not accept', () => {
+    const trigger = primaryTriggerM(note, SPEED);
+    let state = warm(trigger - 5, 1);
+    const first = updateEngine(
+      state,
+      fixAt(geometry, trigger, SPEED, 1000),
+      1000,
+    );
+    expect(first.output.actions.some((a) => a.kind === 'speak')).toBe(true);
+    state = {
+      ...first.state,
+      fired: releaseFired(first.state.fired, [
+        { noteId: 'c1', kind: 'primary' },
+      ]),
+    };
+    const retry = updateEngine(
+      state,
+      fixAt(geometry, trigger + 10, SPEED, 2000),
+      2000,
+    );
+    expect(
+      retry.output.actions.some((a) => a.kind === 'speak' && a.noteId === 'c1'),
+    ).toBe(true);
   });
 
   it('coalesces two notes within chainRadius into one utterance', () => {
@@ -195,5 +225,38 @@ describe('off-route detection', () => {
       state = result.state;
       expect(result.output.status).toBe('on-route');
     }
+  });
+
+  it('does not delete the route by snapping onto the return leg', () => {
+    const start = { lat: 42.7, lng: 23.32 };
+    const north = destinationPoint(start, 0, 50);
+    const east = destinationPoint(north, 90, 20);
+    const south = destinationPoint(east, 180, 50);
+    const loop = buildRouteGeometry([start, north, east, south], null);
+    const note = cornerNote('bend', 70, 2);
+    let state = engineFrom(loop, [note], FILTER);
+    state = updateEngine(state, fixAt(loop, 15, 10, 0), 0).state;
+    const drifted = destinationPoint(
+      pointAtDistance(loop.coords, 15, loop.cumulative),
+      90,
+      16,
+    );
+    const result = updateEngine(
+      state,
+      {
+        lat: drifted.lat,
+        lng: drifted.lng,
+        speedMps: 10,
+        headingDeg: 0,
+        accuracyM: 5,
+        timestampMs: 1000,
+      },
+      1000,
+    );
+    expect(result.output.status).not.toBe('finished');
+    expect(result.output.positionAlongRoute).toBeLessThan(40);
+    expect(result.output.nextNotes.some((item) => item.id === 'bend')).toBe(
+      true,
+    );
   });
 });

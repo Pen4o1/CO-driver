@@ -25,7 +25,11 @@ import { attachVoiceInterruptions } from '@/features/voice';
 import type { PreparedClip } from '@/features/voice/prepareRoute';
 import { useSettings } from '@/state/settings';
 
-import { applyEngineOutput, createDriveVoice } from './voiceBridge';
+import {
+  applyEngineOutput,
+  createDriveVoice,
+  withoutRejectedCalls,
+} from './voiceBridge';
 
 type Input = {
   geometry: RouteGeometry;
@@ -82,9 +86,9 @@ export function useSimDrive(input: Input) {
     const voice = voiceRef.current;
     if (!engine || !voice) return;
     const result = updateEngine(engine, fix, nowMs);
-    engineRef.current = result.state;
+    const rejected = applyEngineOutput(voice, result.output);
+    engineRef.current = withoutRejectedCalls(result.state, rejected);
     setOutput(result.output);
-    applyEngineOutput(voice, result.output);
     if (result.output.status === 'finished') {
       setPlaying(false);
       setStats(driveStats(result.state, nowMs));

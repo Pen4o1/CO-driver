@@ -9,6 +9,14 @@ export type RerouteResult = {
   changed: boolean;
 };
 
+export function usableReroute(geometry: RouteGeometry): boolean {
+  return (
+    geometry.coords.length >= 2 &&
+    Number.isFinite(geometry.lengthM) &&
+    geometry.lengthM >= 50
+  );
+}
+
 export function pathChangedMaterially(
   previous: RouteGeometry,
   next: RouteGeometry,
@@ -36,7 +44,7 @@ export async function rerouteFromHere(input: {
     profileId: 'balanced',
   });
   const next = candidates[0];
-  if (!next) {
+  if (!next || !usableReroute(next.geometry)) {
     return { geometry: input.previous, notes: [], changed: false };
   }
   const changed = pathChangedMaterially(input.previous, next.geometry);

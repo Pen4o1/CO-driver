@@ -31,6 +31,7 @@ export class CoDriverVoice {
   private disposed = false;
   private interrupted = false;
   private generation = 0;
+  private playbackTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly clips: Map<string, PreparedClip>;
 
   constructor(private readonly opts: CoDriverVoiceOpts) {
@@ -58,16 +59,20 @@ export class CoDriverVoice {
     this.opts.pool.preload(uris);
   }
 
-  enqueue(action: VoiceAction): void {
-    if (this.disposed || this.muted || this.interrupted) {
-      return;
+  /** False when the utterance was dropped and should be retried. */
+  enqueue(action: VoiceAction): boolean {
+    if (this.disposed) {
+      return false;
+    }
+    if (this.muted || this.interrupted) {
+      return true;
     }
     if (action.kind === 'stop') {
       void this.stop();
-      return;
+      return true;
     }
     if (action.kind === 'duck') {
-      return;
+      return true;
     }
     const offered = offerUtterance(this.queue, {
       id: action.noteId,
@@ -77,7 +82,7 @@ export class CoDriverVoice {
     });
     this.queue = offered.state;
     if (offered.dropped) {
-      return;
+      return false;
     }
     if (offered.interrupt) {
       this.haltCurrent();
@@ -85,6 +90,7 @@ export class CoDriverVoice {
     if (this.queue.playing?.id === action.noteId) {
       this.startCurrent();
     }
+    return true;
   }
 
   async stop(): Promise<void> {
@@ -104,12 +110,21 @@ export class CoDriverVoice {
 
   dispose(): void {
     this.disposed = true;
+    this.clearPlaybackTimer();
     void this.stop();
     this.opts.pool.release();
   }
 
+  private clearPlaybackTimer(): void {
+    if (this.playbackTimer) {
+      clearTimeout(this.playbackTimer);
+      this.playbackTimer = null;
+    }
+  }
+
   private haltCurrent(): void {
     this.generation += 1;
+    this.clearPlaybackTimer();
     this.opts.pool.stopAll();
     void this.opts.live.stop();
     releaseOtherAudio();
@@ -124,10 +139,13 @@ export class CoDriverVoice {
     const clip = this.clips.get(current.text);
     const live = !clip || clip.live || clip.uri === LIVE_CLIP_URI;
     const gen = this.generation;
+    let settled = false;
     const onDone = () => {
-      if (this.generation !== gen) {
+      if (settled || this.generation !== gen || this.disposed) {
         return;
       }
+      settled = true;
+      this.clearPlaybackTimer();
       this.queue = completePlaying(this.queue);
       if (this.queue.playing) {
         this.startCurrent();
@@ -135,12 +153,23 @@ export class CoDriverVoice {
       }
       releaseOtherAudio();
     };
+    // Live speech often never calls onDone once cellular drops. Unstick the
+    // queue so later turns still get called from the saved clips.
+    const watchdogMs = Math.min(15_000, 6_000 + current.text.length * 70);
+    this.clearPlaybackTimer();
+    this.playbackTimer = setTimeout(onDone, watchdogMs);
     if (live) {
-      this.opts.live.speak(current.text, {
-        voice: this.opts.voiceId,
-        volume: this.volume,
-        onDone,
-      });
+      try {
+        this.opts.live.speak(current.text, {
+          voice: this.opts.voiceId,
+          volume: this.volume,
+          onDone,
+          onStopped: onDone,
+          onError: onDone,
+        });
+      } catch {
+        onDone();
+      }
       return;
     }
     this.opts.pool.play(clip.uri, onDone);

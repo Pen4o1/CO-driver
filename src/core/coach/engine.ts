@@ -1,4 +1,4 @@
-import { projectOnPolyline } from '@/core/geo';
+import { projectProgress } from '@/core/geo';
 import { DEFAULT_NOTE_FILTER } from '@/core/pacenotes';
 import type {
   GeoFix,
@@ -7,7 +7,14 @@ import type {
   RouteGeometry,
 } from '@/core/types';
 
-import { FINISH_WINDOW_M, OFF_ROUTE_TEXT } from './constants';
+import {
+  FINISH_WINDOW_M,
+  OFF_ROUTE_CROSS_TRACK_M,
+  OFF_ROUTE_TEXT,
+  PROGRESS_AHEAD_MAX_M,
+  PROGRESS_AHEAD_MIN_M,
+  PROGRESS_BACK_M,
+} from './constants';
 import {
   effectiveSpeed,
   leadForFirstCorner,
@@ -68,7 +75,9 @@ export function replaceRoute(
     offRouteStreak: 0,
     offRouteSinceMs: null,
     callLog: state.callLog,
-    previousDistanceAlongM: -1,
+    distanceAlongM: 0,
+    previousDistanceAlongM: 0,
+    crossTrackM: 0,
   };
 }
 
@@ -128,10 +137,22 @@ export function updateEngine(
     };
   }
 
-  const projection = projectOnPolyline(
-    { lat: fix.lat, lng: fix.lng },
-    state.geometry.coords,
-  );
+  const dtS =
+    state.lastFix === null
+      ? 0
+      : Math.max(0, (nowMs - state.lastFix.timestampMs) / 1000);
+  const stepM = Math.max(0, fix.speedMps) * dtS;
+  const projection = projectProgress({
+    point: { lat: fix.lat, lng: fix.lng },
+    coords: state.geometry.coords,
+    hintM: state.lastFix === null ? null : state.distanceAlongM,
+    expectedM: state.lastFix === null ? null : state.distanceAlongM + stepM,
+    backM: PROGRESS_BACK_M,
+    aheadM: Math.min(
+      PROGRESS_AHEAD_MAX_M,
+      Math.max(PROGRESS_AHEAD_MIN_M, stepM + 160),
+    ),
+  });
   const distanceAlongM = projection.distanceAlongM;
   const previousDistanceAlongM =
     state.lastFix === null ? distanceAlongM : state.distanceAlongM;
@@ -189,7 +210,12 @@ export function updateEngine(
     }
   }
 
-  if (distanceAlongM >= state.geometry.lengthM - FINISH_WINDOW_M) {
+  const onRoad = projection.crossTrackM <= OFF_ROUTE_CROSS_TRACK_M;
+  if (
+    onRoad &&
+    status !== 'off-route' &&
+    distanceAlongM >= state.geometry.lengthM - FINISH_WINDOW_M
+  ) {
     status = 'finished';
   }
 

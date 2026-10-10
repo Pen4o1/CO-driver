@@ -183,6 +183,7 @@ export default function DriveHudScreen() {
         </View>
       </View>
       {statusLabel ? <Text style={styles.status}>{statusLabel}</Text> : null}
+      {coach.notice ? <Text style={styles.status}>{coach.notice}</Text> : null}
       {coach.error ? <Text style={styles.err}>{coach.error}</Text> : null}
       {bundleError ? <Text style={styles.err}>{bundleError}</Text> : null}
       <View style={styles.controls}>

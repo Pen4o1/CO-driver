@@ -21,6 +21,7 @@ export {
 export { coalesceGroup, groupUtterance } from './coalesce';
 export { scheduleCalls } from './scheduler';
 export { nextOffRoute, isCredibleFix } from './offRoute';
+export { releaseFired } from './fired';
 export {
   createEngineState,
   engineFrom,

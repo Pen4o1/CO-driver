@@ -1,4 +1,5 @@
-import { projectOnPolyline } from './project';
+import { buildRouteGeometry, destinationPoint } from './index';
+import { projectOnPolyline, projectProgress } from './project';
 
 describe('projectOnPolyline', () => {
   const line = [
@@ -19,5 +20,27 @@ describe('projectOnPolyline', () => {
     const hit = projectOnPolyline(offset, line);
     expect(hit.crossTrackM).toBeGreaterThan(50);
     expect(hit.distanceAlongM).toBeGreaterThan(0);
+  });
+});
+
+describe('projectProgress', () => {
+  it('stays on the outbound leg when the return leg is closer on the map', () => {
+    const start = { lat: 42.7, lng: 23.32 };
+    const north = destinationPoint(start, 0, 400);
+    const east = destinationPoint(north, 90, 30);
+    const south = destinationPoint(east, 180, 400);
+    const line = buildRouteGeometry([start, north, east, south], null);
+    const onOutbound = destinationPoint(start, 0, 80);
+    const towardReturn = destinationPoint(onOutbound, 90, 26);
+    const hit = projectProgress({
+      point: towardReturn,
+      coords: line.coords,
+      hintM: 80,
+      expectedM: 90,
+      backM: 80,
+      aheadM: 800,
+    });
+    expect(hit.distanceAlongM).toBeGreaterThan(50);
+    expect(hit.distanceAlongM).toBeLessThan(150);
   });
 });
